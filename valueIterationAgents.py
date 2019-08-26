@@ -69,7 +69,7 @@ class ValueIterationAgent(ValueEstimationAgent):
                         max_val = val
                 temp[s]=max_val
             self.values = deepcopy(temp)
-
+            print(self.values)
 
 
 
@@ -106,7 +106,7 @@ class ValueIterationAgent(ValueEstimationAgent):
             prox_estado =elemento[0]
             prob =elemento[1]
             r = self.mdp.getReward(state,action,prox_estado)
-            valor += prob*(r+self.discount*self.getValue(state))
+            valor += prob*(r+self.discount*self.getValue(prox_estado))
 
         return valor
 
@@ -131,10 +131,11 @@ class ValueIterationAgent(ValueEstimationAgent):
             max_a = 0
             accion = None
             for a in actions:
-                val=self.computeQValueFromValues(state,a)
+                val = self.computeQValueFromValues(state,a)
                 if val > max_a:
                     accion = a
                     max_a = val
+                    print(accion+f": {max_a:0.3f}")
             return accion
 
 
