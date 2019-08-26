@@ -14,6 +14,7 @@
 
 import util
 from graphicsUtils import *
+from functools import  reduce
 
 class GraphicsGridworldDisplay:
 
@@ -129,6 +130,8 @@ def drawValues(gridworld, values, policy, currentState = None, message = 'State 
     text( pos, TEXT_COLOR, message, "Courier", -32, "bold", "c")
 
 def drawQValues(gridworld, qValues, currentState = None, message = 'State-Action Q-Values'):
+    from functools import reduce
+
     grid = gridworld.grid
     blank()
     stateCrossActions = [[(state, action) for action in gridworld.getPossibleActions(state)] for state in gridworld.getStates()]
@@ -344,5 +347,6 @@ def to_grid(point):
     (x, y) = point
     x = int ((y - MARGIN + GRID_SIZE * 0.5) / GRID_SIZE)
     y = int ((x - MARGIN + GRID_SIZE * 0.5) / GRID_SIZE)
-    print point, "-->", (x, y)
+    print(point, "-->", (x, y))
     return (x, y)
+

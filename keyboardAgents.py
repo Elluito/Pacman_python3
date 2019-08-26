@@ -34,6 +34,7 @@ class KeyboardAgent(Agent):
         self.keys = []
 
     def getAction( self, state):
+        print(state)
         from graphicsUtils import keys_waiting
         from graphicsUtils import keys_pressed
         keys = list(keys_waiting())+list((keys_pressed()))
@@ -62,8 +63,8 @@ class KeyboardAgent(Agent):
         if   (self.EAST_KEY in self.keys or 'Right' in self.keys) and Directions.EAST in legal: move = Directions.EAST
         if   (self.NORTH_KEY in self.keys or 'Up' in self.keys) and Directions.NORTH in legal:   move = Directions.NORTH
         if   (self.SOUTH_KEY in self.keys or 'Down' in self.keys) and Directions.SOUTH in legal: move = Directions.SOUTH
-
-        return random.choice(['Left','Right','Up','Down','Stop'])
+        # random.choice(['Left', 'Right', 'Up', 'Down', 'Stop'])
+        return move
 
 class KeyboardAgent2(KeyboardAgent):
     """

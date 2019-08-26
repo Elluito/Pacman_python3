@@ -15,6 +15,7 @@
 from game import Directions, Agent, Actions
 
 import random,util,time
+from mdp import *
 
 class ValueEstimationAgent(Agent):
     """
@@ -45,6 +46,8 @@ class ValueEstimationAgent(Agent):
         self.epsilon = float(epsilon)
         self.discount = float(gamma)
         self.numTraining = int(numTraining)
+        # self.model =MarkovDecisionProcess()
+
 
     ####################################
     #    Override These Functions      #
@@ -52,7 +55,10 @@ class ValueEstimationAgent(Agent):
     def getQValue(self, state, action):
         """
         Should return Q(state,action)
+
         """
+
+
         util.raiseNotDefined()
 
     def getValue(self, state):
@@ -62,6 +68,7 @@ class ValueEstimationAgent(Agent):
 
         V(s) = max_{a in actions} Q(s,a)
         """
+
         util.raiseNotDefined()
 
     def getPolicy(self, state):

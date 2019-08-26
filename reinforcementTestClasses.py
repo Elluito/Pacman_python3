@@ -120,6 +120,7 @@ class ValueIterationTest(testClasses.TestCase):
         return True
 
     def runAgent(self, moduleDict, numIterations):
+
         agent = moduleDict['valueIterationAgents'].ValueIterationAgent(self.grid, discount=self.discount, iterations=numIterations)
         states = self.grid.getStates()
         actions = list(reduce(lambda a, b: set(a).union(b), [self.grid.getPossibleActions(state) for state in states]))
