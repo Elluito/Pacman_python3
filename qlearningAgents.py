@@ -19,15 +19,43 @@ import numpy as np
 from copy import deepcopy as dpc
 import matplotlib.pyplot as plt
 import random as rnd
-print("Llegue hasta aquí")
+import pdb;
 import tensorflow as tf
 from tensorflow import keras
 import tensorflow.contrib.eager as tfe
 # from tensorflow.python.client import device_lib
-print("Pasé los print")
+
 import graphicsUtils as graphix
 
 import random,util,math
+
+from collections import namedtuple
+Transition = namedtuple('Transition',
+                        ('state', 'action', 'next_state', 'reward'))
+BATCH_SIZE=6
+
+class ReplayMemory(object):
+
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = []
+        self.position = 0
+
+    def push(self, *args):
+        """Saves a transition."""
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = Transition(*args)
+        self.position = (self.position + 1) % self.capacity
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
+
+
+
 
 class Policy:
 
@@ -41,6 +69,9 @@ class Policy:
         self.action_space = dim_action
 
         self.gamma = gamma
+        self.memory = ReplayMemory(10000)
+
+
 
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
@@ -48,10 +79,7 @@ class Policy:
 
 
         self.model = keras.Sequential([
-            keras.layers.Dense(512,activation=tf.nn.relu,use_bias=False,input_shape=(self.height*self.width,)),
-            keras.layers.Dense(256,activation=tf.nn.relu,use_bias=False),
-            keras.layers.Dense( 128, activation=tf.nn.relu, use_bias=False),
-            keras.layers.Dense( 64, activation=tf.nn.relu, use_bias=False),
+            keras.layers.Dense( 64, activation=tf.nn.relu, use_bias=False,input_shape=(self.height*self.width,)),
             keras.layers.Dropout( rate=0.6 ),
             keras.layers.Dense( self.action_space, activation=tf.nn.softmax )])
         self.model.summary()
@@ -101,18 +129,36 @@ class Policy:
 
 
     def update_policy(self):
-        R = 0
-        rewards = []
-        policy = self
-        # Discount future rewards back to the present using gamma
-        for r in policy.reward_episode[::-1]:
-            R = r + policy.gamma * R
-            rewards.insert(0, R)
+        if len(self.memory) < BATCH_SIZE:
+            return
+        transitions = self.memory.sample(BATCH_SIZE)
+        # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+        # detailed explanation). This converts batch-array of Transitions
+        # to Transition of batch-arrays.
+        batch = Transition(*zip(*transitions))
 
-        # Scale rewards
-        # rewards = torch.FloatTensor(rewards)
-        # if len(rewards) > 1 : rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps)
-        rewards = (np.array(rewards)-np.mean(rewards))/np.std(rewards)
+        state_batch = batch.state
+        action_batch = batch.action
+        reward_batch = batch.reward
+
+
+        # Compute a mask of non-final states and concatenate the batch elements
+        # (a final state would've been the one after which simulation ended)
+        non_final_mask = np.array((tuple(map(lambda s: s is not None,
+                                                batch.next_state))),dtype=np.int)
+        non_final_next_states =[s for s in batch.next_state
+                                           if s is not None]
+        next_state_values = np.zeros(BATCH_SIZE)
+        next_state_values[non_final_mask] =self.model(non_final_next_states)
+
+
+
+
+        # Compute the expected Q values
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+
+
+
         # Calculate loss
         #
         with tf.GradientTape() as tape:
@@ -120,10 +166,10 @@ class Policy:
             # index =  np.array([range(int(logits.shape[0])), np.array(self.action_history).reshape(-1, )]).reshape(-1, 2)
             real_logits = tf.log(tf.gather_nd(logits,self.action_history) )
 
-
+            loss =tf.losses.huber_loss()
 
             # actions = tf.multiply(actions,1/np.sum(actions,axis=1,dtype=np.float).reshape(-1,1))
-            loss = tf.reduce_sum(tf.multiply(tf.reshape(real_logits,(-1,1)),rewards))-1
+
 
         grads = tape.gradient( loss, self.model.trainable_variables )
         # del tape
@@ -131,18 +177,7 @@ class Policy:
         self.optimizer.apply_gradients( zip( grads, self.model.trainable_variables ), self.global_step )
 
 
-            # self.accuracy(coso,actions)
 
-        # Update network weights
-
-
-        # Save and intialize episode history counters
-
-
-        # f.wrte(str(np.sum(policy.reward_episode))+"\n")
-        policy.reward_episode = []
-        policy.state_history = []
-        policy.action_history = []
 
 
 class QLearningAgent(ReinforcementAgent):
@@ -171,9 +206,12 @@ class QLearningAgent(ReinforcementAgent):
         "You can initialize Q-values here..."
         ReinforcementAgent.__init__(self, **args)
         self.actions = ['South', 'North', 'East', 'West', 'Stop']
-
+        pdb.set_trace()
 
         "*** YOUR CODE HERE ***"
+        self.mapeo = {"%":200,"<":30,">":35,"v":40,"^":45,".":90,"G":150," ":10}
+        self.escala = 255
+
 
         layout = args["layout"]
         width = layout.width
@@ -190,6 +228,7 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
+
         util.raiseNotDefined()
 
 
@@ -226,12 +265,12 @@ class QLearningAgent(ReinforcementAgent):
         # Pick Action
         filas = str(state).split("\n")
 
-        from tensorflow.distributions import Categorical
+
 
         imagen = np.zeros((self.policy.height,self.policy.width))
         for i in range(self.policy.height):
             for j in range(self.policy.width):
-                imagen[i,j]=ord(filas[i][j])
+                imagen[i,j]=self.mapeo[filas[i][j]]/self.escala
 
 
         # legalActions = self.getLegalActions(state)
@@ -240,14 +279,11 @@ class QLearningAgent(ReinforcementAgent):
         new_state = np.transpose(imagen.reshape((-1,1)))
         logits = self.policy.model([new_state]).numpy()[0]
         logits = logits/(np.sum(logits)+0.01)
-        accion = np.argmax(np.random.multinomial(1,logits))
+        accion = np.argmax(logits) if random.rand()> self.epsilon else np.random.choice(range(len(self.actions)))
 
 
 
         action = self.actions[accion]
-
-        self.policy.state_history.append(new_state.reshape(1,-1))
-        self.policy.action_history.append([len(self.policy.action_history),accion])
 
 
 
@@ -268,7 +304,11 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        self.policy.reward_episode.append(reward)
+
+
+
+
+        self.policy.memory.push(state,self.actions.index(action),nextState,reward)
 
 
 

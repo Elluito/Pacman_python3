@@ -546,7 +546,7 @@ def readCommand( argv ):
     if options.numTraining > 0:
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
-    # agentOpts['layout'] = args['layout']
+    agentOpts['layout'] = args['layout']
     pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
 
@@ -642,7 +642,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 
     rules = ClassicGameRules(timeout)
     games = []
-
+    # TODO aquí esta los  juegos que se juegan tocaría tener el agenete (policy) por fuera del  agente.
     for i in range( numGames ):
         beQuiet = i < numTraining
         if beQuiet:

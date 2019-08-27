@@ -619,7 +619,7 @@ class Game:
 
         agentIndex = self.startingIndex
         numAgents = len( self.agents )
-
+        # TODO dejo esto aquí pues es donde empieza
         while not self.gameOver:
             # Fetch the next agent
             agent = self.agents[agentIndex]
@@ -724,12 +724,14 @@ class Game:
                 boinc.set_fraction_done(self.getProgress())
 
         # inform a learning agent of the game result
+        #TODO aquí aparecen cuando se acaban los juegos
+
         for agentIndex, agent in enumerate(self.agents):
             if "final" in dir( agent ) :
                 try:
                     self.mute(agentIndex)
                     agent.final( self.state )
-                    # agent.policy.update_policy()
+                    agent.policy.update_policy()
                     self.unmute()
                 except Exception:
                     if not self.catchExceptions: raise
