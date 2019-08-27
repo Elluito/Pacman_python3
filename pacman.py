@@ -680,22 +680,22 @@ def crear_layout():
     direccion = "layouts"
     lay= np.zeros((7,19),dtype=np.object_)
     #La posición de la comida
-    pos_comida = (17,1)
+    pos_comida = (1,17)
     #Posición del pacman
     x = int(np.random.randint(15,17))
     y = int(np.random.randint(1,5))
-    pos_pacman =(x,y)
+    pos_pacman =(y,x)
     #Posición del fantasma
     xf = int(np.random.randint(1,3))
-    yf = int(np.random.randint(1,5))
-    pos_fantasma = (xf,yf)
+    yf = int(np.random.randint(5,7))
+    pos_fantasma = (yf,xf)
 
     #Construyo las paredes
     lay[0,:] = "%"
     lay[:,0] = "%"
     lay[:,-1] = "%"
     lay[-1,:] = "%"
-    lay[pos_comida] = "o"
+    lay[pos_comida] = "."
     lay[pos_pacman] = "P"
     lay[pos_fantasma] = "G"
 
@@ -705,7 +705,7 @@ def crear_layout():
     s = s.replace("'","")
     s = s.replace(" ","")
     s = s.replace("]","")
-    s.replace("0"," ")
+    s = s.replace("0"," ")
 
 
 
@@ -719,7 +719,7 @@ def crear_layout():
 
 
 
-    if __name__ == '__main__':
+if __name__ == '__main__':
         """
         The main function called when pacman.py is run
         from the command line:
