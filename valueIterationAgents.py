@@ -69,7 +69,7 @@ class ValueIterationAgent(ValueEstimationAgent):
                         max_val = val
                 temp[s]=max_val
             self.values = deepcopy(temp)
-            print(self.values)
+
 
 
 
@@ -135,7 +135,6 @@ class ValueIterationAgent(ValueEstimationAgent):
                 if val > max_a:
                     accion = a
                     max_a = val
-                    print(accion+f": {max_a:0.3f}")
             return accion
 
 

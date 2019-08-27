@@ -675,24 +675,68 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         print('Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
 
     return games
+def crear_layout():
+    import numpy as np
+    direccion = "layouts"
+    lay= np.zeros((7,19),dtype=np.object_)
+    #La posición de la comida
+    pos_comida = (17,1)
+    #Posición del pacman
+    x = int(np.random.randint(15,17))
+    y = int(np.random.randint(1,5))
+    pos_pacman =(x,y)
+    #Posición del fantasma
+    xf = int(np.random.randint(1,3))
+    yf = int(np.random.randint(1,5))
+    pos_fantasma = (xf,yf)
 
-if __name__ == '__main__':
-    """
-    The main function called when pacman.py is run
-    from the command line:
+    #Construyo las paredes
+    lay[0,:] = "%"
+    lay[:,0] = "%"
+    lay[:,-1] = "%"
+    lay[-1,:] = "%"
+    lay[pos_comida] = "o"
+    lay[pos_pacman] = "P"
+    lay[pos_fantasma] = "G"
 
-    > python pacman.py
-
-    See the usage string for more details.
-
-    > python pacman.py --help
-    """
-    args = readCommand( sys.argv[1:] ) # Get game components based on input
-    runGames( **args )
-
+    s = str(lay)
+    s = s.replace("'\n", " ")
+    s = s.replace("[","")
+    s = s.replace("'","")
+    s = s.replace(" ","")
+    s = s.replace("]","")
+    s.replace("0"," ")
 
 
 
-    # import cProfile
-    # cProfile.run("runGames( **args )")
-    pass
+
+
+    open(direccion+"\campo.lay","w").close()
+    f = open(direccion+"\campo.lay","w")
+    f.write(s)
+    f.close()
+
+
+
+
+    if __name__ == '__main__':
+        """
+        The main function called when pacman.py is run
+        from the command line:
+    
+        > python pacman.py
+    
+        See the usage string for more details.
+    
+        > python pacman.py --help
+        """
+        crear_layout()
+        args = readCommand( sys.argv[1:] ) # Get game components based on input
+        runGames( **args )
+
+
+
+
+        # import cProfile
+        # cProfile.run("runGames( **args )")
+        pass
