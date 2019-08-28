@@ -75,6 +75,7 @@ class Policy:
 
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
+        self.mapeo = {"%": 200, "<": 30, ">": 35, "v": 40, "^": 45, ".": 90, "G": 150, " ": 10}
 
 
 
@@ -127,6 +128,17 @@ class Policy:
     def saveModel( self, name ) :
         self.model.save('models/' + name + '.h5')
 
+    def mapeo(self, state):
+        filas = state.split("\n")
+
+        imagen = np.zeros((self.height, self.policy.width))
+        for i in range(self.height):
+            for j in range(self.width):
+                imagen[i, j] = self.mapeo[filas[i][j]] / 255
+
+        return imagen.reshape((-1,1))
+
+
 
     def update_policy(self):
         if len(self.memory) < BATCH_SIZE:
@@ -137,18 +149,22 @@ class Policy:
         # to Transition of batch-arrays.
         batch = Transition(*zip(*transitions))
 
-        state_batch = batch.state
-        action_batch = batch.action
-        reward_batch = batch.reward
+        state_batch = np.array(batch.state)
+        action_batch = np.array(batch.action)
+        reward_batch = np.array(batch.reward)
 
 
         # Compute a mask of non-final states and concatenate the batch elements
         # (a final state would've been the one after which simulation ended)
-        non_final_mask = np.array((tuple(map(lambda s: s is not None,
-                                                batch.next_state))),dtype=np.int)
+        non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and s.data._win,batch.next_state))),dtype=np.int)
         non_final_next_states =[s for s in batch.next_state
-                                           if s is not None]
+                                           if not s.data._lose and not s.data._win]
         next_state_values = np.zeros(BATCH_SIZE)
+        non_final_next_states =list(map(str,non_final_next_states))
+        non_final_next_states = list(map(self.mapeo,non_final_next_states))
+
+
+        # TODO aquí tengo que escoger epsilon greedy la acion en el proximo estado
         next_state_values[non_final_mask] =self.model(non_final_next_states)
 
 
@@ -206,7 +222,7 @@ class QLearningAgent(ReinforcementAgent):
         "You can initialize Q-values here..."
         ReinforcementAgent.__init__(self, **args)
         self.actions = ['South', 'North', 'East', 'West', 'Stop']
-        pdb.set_trace()
+        # pdb.set_trace()
 
         "*** YOUR CODE HERE ***"
         self.mapeo = {"%":200,"<":30,">":35,"v":40,"^":45,".":90,"G":150," ":10}
@@ -220,6 +236,9 @@ class QLearningAgent(ReinforcementAgent):
 
 
         self.policy = Policy(width,height,5)
+
+
+
 
     def getQValue(self, state, action):
         """
@@ -279,7 +298,7 @@ class QLearningAgent(ReinforcementAgent):
         new_state = np.transpose(imagen.reshape((-1,1)))
         logits = self.policy.model([new_state]).numpy()[0]
         logits = logits/(np.sum(logits)+0.01)
-        accion = np.argmax(logits) if random.rand()> self.epsilon else np.random.choice(range(len(self.actions)))
+        accion = np.argmax(logits) if np.random.rand()> self.epsilon else np.random.choice(range(len(self.actions)))
 
 
 
@@ -309,10 +328,6 @@ class QLearningAgent(ReinforcementAgent):
 
 
         self.policy.memory.push(state,self.actions.index(action),nextState,reward)
-
-
-
-
 
 
 
