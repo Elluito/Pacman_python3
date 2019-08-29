@@ -261,7 +261,7 @@ class GameState:
 
 SCARED_TIME = 40    # Moves ghosts are scared
 COLLISION_TOLERANCE = 0.7 # How close ghosts must be to Pacman to kill
-TIME_PENALTY = 1 # Number of points lost each round
+TIME_PENALTY = 0 # Number of points lost each round
 
 class ClassicGameRules:
     """
@@ -642,7 +642,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 
     rules = ClassicGameRules(timeout)
     games = []
-    # TODO aquí esta los  juegos que se juegan tocaría tener el agenete (policy) por fuera del  agente.
+    # TODO aquí esta los  juegos que se juegan tocaría tener el agente (policy) por fuera del  agente.
     for i in range( numGames ):
         beQuiet = i < numTraining
         if beQuiet:
@@ -666,6 +666,9 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             f.close()
 
     if (numGames-numTraining) > 0:
+        import matplotlib.pyplot as plt
+        plt.plot(pacman.policy.loss_history)
+        plt.show()
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True)/ float(len(wins))
@@ -678,16 +681,16 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 def crear_layout():
     import numpy as np
     direccion = "layouts"
-    lay= np.zeros((7,19),dtype=np.object_)
+    lay= np.zeros((19,19),dtype=np.object_)
     #La posición de la comida
-    pos_comida = (1,17)
+    pos_comida = (10,17)
     #Posición del pacman
-    x = int(np.random.randint(15,17))
-    y = int(np.random.randint(1,5))
+    x = int(np.random.randint(10,15))
+    y = int(np.random.randint(5,10))
     pos_pacman =(y,x)
     #Posición del fantasma
-    xf = int(np.random.randint(1,3))
-    yf = int(np.random.randint(5,7))
+    xf = int(np.random.randint(1,10))
+    yf = int(np.random.randint(3,10))
     pos_fantasma = (yf,xf)
 
     #Construyo las paredes

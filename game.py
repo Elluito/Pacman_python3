@@ -732,6 +732,7 @@ class Game:
                     self.mute(agentIndex)
                     agent.final( self.state )
                     agent.policy.update_policy()
+
                     self.unmute()
                 except Exception:
                     if not self.catchExceptions: raise

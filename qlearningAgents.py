@@ -27,12 +27,21 @@ import tensorflow.contrib.eager as tfe
 
 import graphicsUtils as graphix
 
-import random,util,math
+import random, util, math
 
 from collections import namedtuple
+NORTH = 'North'
+SOUTH = 'South'
+EAST = 'East'
+WEST = 'West'
+STOP = 'Stop'
+EPS_START = 0.9
+EPS_END = 0.05
+EPS_DECAY = 200
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-BATCH_SIZE=6
+BATCH_SIZE = 128
+
 
 class ReplayMemory(object):
 
@@ -55,11 +64,9 @@ class ReplayMemory(object):
         return len(self.memory)
 
 
-
-
 class Policy:
 
-    def __init__( self, width,height, dim_action, gamma=0.9, load_name=None):
+    def __init__(self, width, height, dim_action, gamma=0.9, load_name=None):
         tf.enable_eager_execution()
         self.width = width
         self.height = height
@@ -70,26 +77,23 @@ class Policy:
 
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
-
-
+        self.epsilon = 0.1
 
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 200, "<": 30, ">": 35, "v": 40, "^": 45, ".": 90, "G": 150, " ": 10}
 
-
-
         self.model = keras.Sequential([
-            keras.layers.Dense( 64, activation=tf.nn.relu, use_bias=False,input_shape=(self.height*self.width,)),
-            keras.layers.Dropout( rate=0.6 ),
-            keras.layers.Dense( self.action_space, activation=tf.nn.softmax )])
-        self.model.summary()
+            keras.layers.Dense(64, activation=tf.nn.relu, use_bias=False, input_shape=(self.height * self.width,)),
+            keras.layers.Dropout(rate=0.6),
+            keras.layers.Dense(self.action_space, activation="linear")])
+        self.model.compile(loss="mse", optimizer=tf.train.AdamOptimizer(0.001))
 
-        if load_name is not None : self.model = keras.models.load_model( load_name )
+        if load_name is not None: self.model = keras.models.load_model(load_name)
 
         self.optimizer = tf.train.AdamOptimizer()
 
-        self.device = "CPU:0"
+        self.device = "GPU:0"
         # gpus = getGPUs( )
         # if gpus : self.device = gpus[0]
 
@@ -101,44 +105,23 @@ class Policy:
         # Overall reward and loss history
         self.reward_history = []
         self.loss_history = []
-    def load_Model(self,load_name=None):
-        self.model = keras.models.load_model( load_name )
+
+    def load_Model(self, load_name=None):
+        self.model = keras.models.load_model(load_name)
 
 
-    def update_policy_supervised( self, states, actions ) :
-        states = np.array(states)
-        epochs = 100
-        f=open("loss.txt","a")
-        for e in range(epochs) :
-            with tf.device( self.device ) :
-                with tf.GradientTape() as tape:
-                    actions_ = self.model( [states[:,:-14],states[:,-14:] ])
-                    # actions = tf.multiply(actions,1/np.sum(actions,axis=1,dtype=np.float).reshape(-1,1))
-                    loss = tf.losses.softmax_cross_entropy( onehot_labels=tf.multiply(actions,1/np.sum(actions,axis=1,dtype=np.float).reshape(-1,1)), logits=actions_ )
-                grads = tape.gradient( loss, self.model.trainable_variables )
-                # del tape
-                del tape
-                self.optimizer.apply_gradients( zip( grads, self.model.trainable_variables ), self.global_step )
-
-            f.write(str(loss.numpy())+"\n")
-            # self.accuracy(coso,actions)
-            print( f'\tEpoch {e+1:d}/{epochs}... | Loss: {loss:.3f}' )
-        f.close()
-
-    def saveModel( self, name ) :
+    def saveModel(self, name):
         self.model.save('models/' + name + '.h5')
 
-    def mapeo(self, state):
+    def mapeo_fn(self, state):
         filas = state.split("\n")
 
-        imagen = np.zeros((self.height, self.policy.width))
+        imagen = np.zeros((self.height, self.width))
         for i in range(self.height):
             for j in range(self.width):
                 imagen[i, j] = self.mapeo[filas[i][j]] / 255
 
-        return imagen.reshape((-1,1))
-
-
+        return imagen.reshape((-1, 1))
 
     def update_policy(self):
         if len(self.memory) < BATCH_SIZE:
@@ -149,51 +132,76 @@ class Policy:
         # to Transition of batch-arrays.
         batch = Transition(*zip(*transitions))
 
-        state_batch = np.array(batch.state)
-        action_batch = np.array(batch.action)
+        state_batch = batch.state
+        state_batch = list(map(str, state_batch))
+        state_batch = list(map(self.mapeo_fn, state_batch))
+        state_batch = list(map(np.transpose, state_batch))
+        state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, self.height*self.width))
+
+        action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
         reward_batch = np.array(batch.reward)
 
 
         # Compute a mask of non-final states and concatenate the batch elements
         # (a final state would've been the one after which simulation ended)
-        non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and s.data._win,batch.next_state))),dtype=np.int)
-        non_final_next_states =[s for s in batch.next_state
-                                           if not s.data._lose and not s.data._win]
-        next_state_values = np.zeros(BATCH_SIZE)
-        non_final_next_states =list(map(str,non_final_next_states))
-        non_final_next_states = list(map(self.mapeo,non_final_next_states))
+        non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
+                                  dtype=np.int)
+        non_final_mask = np.nonzero(non_final_mask)[0]
+        non_final_next_states = [s for s in batch.next_state
+                                 if not s.data._lose and not s.data._win]
+        next_state_values = np.zeros([BATCH_SIZE],dtype =float)
+        non_final_next_states = list(map(str, non_final_next_states))
+        non_final_next_states = list(map(self.mapeo_fn, non_final_next_states))
+        non_final_next_states = list(map(np.transpose,non_final_next_states))
+        non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1, self.width*self.width))
+        next_state_values[non_final_mask] = np.max(self.model.predict([non_final_next_states]),axis=1)
+        real_q_values = []
 
+        for i in range(len(next_state_values)):
+            reward =reward_batch[i]
+            state = state_batch[i,:]
+            action = action_batch[i,1]
+            q_update = (reward + self.gamma * next_state_values[i])
+            q_values = self.model.predict(state.reshape(1,-1))
+            q_values[0][action] = q_update
+            self.model.fit(state.reshape(1,-1), q_values, verbose=0)
+
+        # q_values = self.model([non_final_next_states])
+        # for i in range(len(non_final_next_states)):
+        #     elem = np.max(q_values[i]) if np.random.rand() > self.epsilon else q_values[i][np.random.randint(0,5)]
+        #     real_q_values.append(np.float64(elem))
+        #
+        # real_q_values =np.array(real_q_values)
+        # #tf.reduce_max(self.model([non_final_next_states]), axis=1)
+        # next_state_values[non_final_mask] = real_q_values
+        #
+        # expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 
         # TODO aquí tengo que escoger epsilon greedy la acion en el proximo estado
-        next_state_values[non_final_mask] =self.model(non_final_next_states)
-
-
-
 
         # Compute the expected Q values
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
-
-
 
         # Calculate loss
         #
-        with tf.GradientTape() as tape:
-            logits =self.model([np.array(self.state_history).reshape(-1,56)])
-            # index =  np.array([range(int(logits.shape[0])), np.array(self.action_history).reshape(-1, )]).reshape(-1, 2)
-            real_logits = tf.log(tf.gather_nd(logits,self.action_history) )
+        # with tf.GradientTape() as tape:
 
-            loss =tf.losses.huber_loss()
+
+
+            #aqu'i en vez de   hacerlo como lo dijo Edwin escog'i la acci'on, no dije que eran  5 salidas de de la red si no que escog'i una de esas 5 salidas
+
+        # state_values = tf.gather_nd(self.model.predict([state_batch]),action_batch)
+
+
+        # loss = tf.losses.huber_loss(state_values,expected_state_action_values)
+
 
             # actions = tf.multiply(actions,1/np.sum(actions,axis=1,dtype=np.float).reshape(-1,1))
-
-
-        grads = tape.gradient( loss, self.model.trainable_variables )
+        # self.model.fit(state_batch,expected_state_action_values, verbose=0)
+        # grads = tape.gradient(loss, self.model.trainable_variables)
+        # self.loss_history.append(loss.numpy())
         # del tape
-        del tape
-        self.optimizer.apply_gradients( zip( grads, self.model.trainable_variables ), self.global_step )
-
-
-
+        # del tape
+        # self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables), self.global_step)
 
 
 class QLearningAgent(ReinforcementAgent):
@@ -215,30 +223,23 @@ class QLearningAgent(ReinforcementAgent):
       Functions you should use
         - self.getLegalActions(state)
           which returns legal actions for a state
-
-
     """
+
     def __init__(self, **args):
-        "You can initialize Q-values here..."
+        """You can initialize Q-values here..."""
         ReinforcementAgent.__init__(self, **args)
-        self.actions = ['South', 'North', 'East', 'West', 'Stop']
+        self.actions = [NORTH, WEST, SOUTH,EAST, STOP]
         # pdb.set_trace()
 
         "*** YOUR CODE HERE ***"
-        self.mapeo = {"%":200,"<":30,">":35,"v":40,"^":45,".":90,"G":150," ":10}
+        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 10}
         self.escala = 255
-
 
         layout = args["layout"]
         width = layout.width
         height = layout.height
 
-
-
-        self.policy = Policy(width,height,5)
-
-
-
+        self.policy = Policy(width, height, 5)
 
     def getQValue(self, state, action):
         """
@@ -249,7 +250,6 @@ class QLearningAgent(ReinforcementAgent):
         "*** YOUR CODE HERE ***"
 
         util.raiseNotDefined()
-
 
     def computeValueFromQValues(self, state):
         """
@@ -284,33 +284,24 @@ class QLearningAgent(ReinforcementAgent):
         # Pick Action
         filas = str(state).split("\n")
 
-
-
-        imagen = np.zeros((self.policy.height,self.policy.width))
+        imagen = np.zeros((self.policy.height, self.policy.width))
         for i in range(self.policy.height):
             for j in range(self.policy.width):
-                imagen[i,j]=self.mapeo[filas[i][j]]/self.escala
-
+                imagen[i, j] = self.mapeo[filas[i][j]] / self.escala
 
         # legalActions = self.getLegalActions(state)
-        action = None
+
         "*** YOUR CODE HERE ***"
-        new_state = np.transpose(imagen.reshape((-1,1)))
+        new_state = np.transpose(imagen.reshape((-1, 1)))
         logits = self.policy.model([new_state]).numpy()[0]
-        logits = logits/(np.sum(logits)+0.01)
-        accion = np.argmax(logits) if np.random.rand()> self.epsilon else np.random.choice(range(len(self.actions)))
-
-
-
+        logits = logits / (np.sum(logits) + 0.01)
+        accion = np.argmax(logits) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
         action = self.actions[accion]
-
-
-
-
-
-
         # util.raiseNotDefined()
-
+        print(accion)
+        eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+                        math.exp(-1. * self.episodesSoFar / EPS_DECAY)
+        self.epsilon = eps_threshold
         return action
 
     def update(self, state, action, nextState, reward):
@@ -323,13 +314,7 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-
-
-
-
-        self.policy.memory.push(state,self.actions.index(action),nextState,reward)
-
-
+        self.policy.memory.push(state, self.actions.index(action), nextState, reward)
 
         # util.raiseNotDefined()
 
@@ -343,7 +328,7 @@ class QLearningAgent(ReinforcementAgent):
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 
-    def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, numTraining=0, **args):
+    def __init__(self, epsilon=0.05, gamma=0.8, alpha=0.2, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -367,8 +352,8 @@ class PacmanQAgent(QLearningAgent):
         informs parent of action for Pacman.  Do not change or remove this
         method.
         """
-        action = QLearningAgent.getAction(self,state)
-        self.doAction(state,action)
+        action = QLearningAgent.getAction(self, state)
+        self.doAction(state, action)
         return action
 
 
@@ -380,6 +365,7 @@ class ApproximateQAgent(PacmanQAgent):
        and update.  All other QLearningAgent functions
        should work as is.
     """
+
     def __init__(self, extractor='IdentityExtractor', **args):
         self.featExtractor = util.lookup(extractor, globals())()
         PacmanQAgent.__init__(self, **args)
@@ -409,6 +395,7 @@ class ApproximateQAgent(PacmanQAgent):
         PacmanQAgent.final(self, state)
 
         # did we finish training?
+
         if self.episodesSoFar == self.numTraining:
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
