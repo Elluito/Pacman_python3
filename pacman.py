@@ -261,7 +261,7 @@ class GameState:
 
 SCARED_TIME = 40    # Moves ghosts are scared
 COLLISION_TOLERANCE = 0.7 # How close ghosts must be to Pacman to kill
-TIME_PENALTY = 0 # Number of points lost each round
+TIME_PENALTY = 1 # Number of points lost each round
 
 class ClassicGameRules:
     """
@@ -643,8 +643,28 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     rules = ClassicGameRules(timeout)
     games = []
     # TODO aquí esta los  juegos que se juegan tocaría tener el agente (policy) por fuera del  agente.
+
+    open("datos/score_1000.txt", "w").close()
+    global score_prom
+    score_prom = 0
+
     for i in range( numGames ):
+        if i >numTraining and isinstance(pacman, PacmanQAgent):
+            pacman.prueba =True
+        pacman.num_trans =0
+
+        if i%50==0:
+            f = open("datos/score_1000.txt", "a")
+            f.write(str(score_prom) + "\n")
+            f.close()
+
+            score_prom = 0
+
         beQuiet = i < numTraining
+
+        global EPISODES
+
+        EPISODES = i
         if beQuiet:
                 # Suppress output and graphics
             import textDisplay
@@ -653,8 +673,14 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         else:
             gameDisplay = display
             rules.quiet = False
+        from qlearningAgents import PacmanQAgent
+        # if isinstance(pacman,PacmanQAgent):
+        #     pacman.policy.load_Model("models/modelo.h5")
+        #     pacman.epsilon =0
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
-        game.run()
+
+        game.run(score_prom,EPISODES)
+
         if not beQuiet: games.append(game)
 
         if record:
@@ -664,11 +690,12 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
+    if isinstance( pacman,PacmanQAgent):
+        pacman.policy.saveModel("modelo_1000")
+
 
     if (numGames-numTraining) > 0:
-        import matplotlib.pyplot as plt
-        plt.plot(pacman.policy.loss_history)
-        plt.show()
+
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True)/ float(len(wins))
@@ -683,14 +710,14 @@ def crear_layout():
     direccion = "layouts"
     lay= np.zeros((19,19),dtype=np.object_)
     #La posición de la comida
-    pos_comida = (10,17)
+    pos_comida = (10,10)
     #Posición del pacman
-    x = int(np.random.randint(10,15))
-    y = int(np.random.randint(5,10))
+    x = int(np.random.randint(15,17))
+    y = int(np.random.randint(9,10))
     pos_pacman =(y,x)
     #Posición del fantasma
-    xf = int(np.random.randint(1,10))
-    yf = int(np.random.randint(3,10))
+    xf = int(np.random.randint(1,3))
+    yf = int(np.random.randint(3,5))
     pos_fantasma = (yf,xf)
 
     #Construyo las paredes
@@ -736,6 +763,14 @@ if __name__ == '__main__':
         crear_layout()
         args = readCommand( sys.argv[1:] ) # Get game components based on input
         runGames( **args )
+        import matplotlib.pyplot as plt
+        import numpy as np
+        # x= np.loadtxt("datos/score.txt")
+        # plt.plot(x)
+        # plt.xlabel("Episodios")
+        # plt.ylabel("Recompenza promedio")
+        # plt.savefig("datos/recomp_prom.png")
+
 
 
 

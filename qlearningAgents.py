@@ -37,10 +37,10 @@ WEST = 'West'
 STOP = 'Stop'
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 200
+EPS_DECAY = 2000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-BATCH_SIZE = 128
+BATCH_SIZE = 500
 
 
 class ReplayMemory(object):
@@ -66,7 +66,7 @@ class ReplayMemory(object):
 
 class Policy:
 
-    def __init__(self, width, height, dim_action, gamma=0.9, load_name=None):
+    def __init__(self, width, height, dim_action, gamma=0.98, load_name=None):
         tf.enable_eager_execution()
         self.width = width
         self.height = height
@@ -81,10 +81,11 @@ class Policy:
 
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
-        self.mapeo = {"%": 200, "<": 30, ">": 35, "v": 40, "^": 45, ".": 90, "G": 150, " ": 10}
+        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 10}
 
         self.model = keras.Sequential([
-            keras.layers.Dense(64, activation=tf.nn.relu, use_bias=False, input_shape=(self.height * self.width,)),
+            keras.layers.Dense(128, activation=tf.nn.relu, use_bias=False, input_shape=(self.height * self.width,)),
+            keras.layers.Dense(64, activation=tf.nn.relu, use_bias=False),
             keras.layers.Dropout(rate=0.6),
             keras.layers.Dense(self.action_space, activation="linear")])
         self.model.compile(loss="mse", optimizer=tf.train.AdamOptimizer(0.001))
@@ -123,10 +124,10 @@ class Policy:
 
         return imagen.reshape((-1, 1))
 
-    def update_policy(self):
+    def update_policy(self,agent):
         if len(self.memory) < BATCH_SIZE:
             return
-        transitions = self.memory.sample(BATCH_SIZE)
+        transitions = self.memory.memory[-agent.num_trans:-1]
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
         # to Transition of batch-arrays.
@@ -164,7 +165,15 @@ class Policy:
             q_update = (reward + self.gamma * next_state_values[i])
             q_values = self.model.predict(state.reshape(1,-1))
             q_values[0][action] = q_update
-            self.model.fit(state.reshape(1,-1), q_values, verbose=0)
+            self.model.train_on_batch(state.reshape(1,-1), q_values)
+
+
+        print("ACUALICE")
+
+
+
+
+
 
         # q_values = self.model([non_final_next_states])
         # for i in range(len(non_final_next_states)):
@@ -232,12 +241,15 @@ class QLearningAgent(ReinforcementAgent):
         # pdb.set_trace()
 
         "*** YOUR CODE HERE ***"
-        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 10}
+        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 0}
         self.escala = 255
+        self.prueba =False
 
         layout = args["layout"]
         width = layout.width
         height = layout.height
+        self.extractor = SimpleExtractor()
+        self.num_trans =0
 
         self.policy = Policy(width, height, 5)
 
@@ -292,16 +304,21 @@ class QLearningAgent(ReinforcementAgent):
         # legalActions = self.getLegalActions(state)
 
         "*** YOUR CODE HERE ***"
+
         new_state = np.transpose(imagen.reshape((-1, 1)))
         logits = self.policy.model([new_state]).numpy()[0]
         logits = logits / (np.sum(logits) + 0.01)
         accion = np.argmax(logits) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
         action = self.actions[accion]
+        print(action)
         # util.raiseNotDefined()
-        print(accion)
-        eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-                        math.exp(-1. * self.episodesSoFar / EPS_DECAY)
-        self.epsilon = eps_threshold
+        if  not self.prueba:
+            eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+                            math.exp(-1. * self.episodesSoFar / EPS_DECAY)
+
+            self.epsilon = eps_threshold
+
+
         return action
 
     def update(self, state, action, nextState, reward):
@@ -315,6 +332,8 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         self.policy.memory.push(state, self.actions.index(action), nextState, reward)
+        self.num_trans+=1
+        print("llamaron el metodo update")
 
         # util.raiseNotDefined()
 
@@ -399,4 +418,5 @@ class ApproximateQAgent(PacmanQAgent):
         if self.episodesSoFar == self.numTraining:
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
+            print("ACABA AL FIN")
             pass

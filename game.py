@@ -572,7 +572,8 @@ class Game:
         sys.stderr = OLD_STDERR
 
 
-    def run( self ):
+    def run( self,score_prom,EPISODES ):
+
         """
         Main control loop for game play.
         """
@@ -623,6 +624,8 @@ class Game:
         while not self.gameOver:
             # Fetch the next agent
             agent = self.agents[agentIndex]
+
+
             move_time = 0
             skip_action = False
             # Generate an observation of the state
@@ -721,7 +724,12 @@ class Game:
             agentIndex = ( agentIndex + 1 ) % numAgents
 
             if _BOINC_ENABLED:
+
                 boinc.set_fraction_done(self.getProgress())
+
+
+        score_prom += 1 / (EPISODES + 1) * (self.state.getScore() - score_prom)
+        print(f"Episodio: {EPISODES:d}")
 
         # inform a learning agent of the game result
         #TODO aquí aparecen cuando se acaban los juegos
@@ -731,7 +739,8 @@ class Game:
                 try:
                     self.mute(agentIndex)
                     agent.final( self.state )
-                    agent.policy.update_policy()
+                    agent.policy.update_policy(agent)
+
 
                     self.unmute()
                 except Exception:
@@ -740,3 +749,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
+        return self.state.getScore()
