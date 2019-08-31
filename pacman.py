@@ -645,21 +645,12 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     # TODO aquí esta los  juegos que se juegan tocaría tener el agente (policy) por fuera del  agente.
 
     open("datos/score_1000.txt", "w").close()
-    global score_prom
+
     score_prom = 0
 
     for i in range( numGames ):
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
-        pacman.num_trans =0
-
-        if i%50==0:
-            f = open("datos/score_1000.txt", "a")
-            f.write(str(score_prom) + "\n")
-            f.close()
-
-            score_prom = 0
-
         beQuiet = i < numTraining
 
         global EPISODES
@@ -674,12 +665,18 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             gameDisplay = display
             rules.quiet = False
         from qlearningAgents import PacmanQAgent
-        # if isinstance(pacman,PacmanQAgent):
-        #     pacman.policy.load_Model("models/modelo.h5")
-        #     pacman.epsilon =0
+        if isinstance(pacman,PacmanQAgent):
+            pacman.policy.load_Model("models/modelo_1000.h5")
+            pacman.epsilon =0
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         game.run(score_prom,EPISODES)
+        if i%50 == 0:
+            print(score_prom)
+            f = open("datos/score_1000.txt", "a")
+            f.write(str(score_prom) + "\n")
+            f.close()
+
 
         if not beQuiet: games.append(game)
 
@@ -690,8 +687,8 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
-    if isinstance( pacman,PacmanQAgent):
-        pacman.policy.saveModel("modelo_1000")
+    # if isinstance( pacman,PacmanQAgent):
+    #     pacman.policy.saveModel("modelo_1000")
 
 
     if (numGames-numTraining) > 0:
@@ -712,7 +709,7 @@ def crear_layout():
     #La posición de la comida
     pos_comida = (10,10)
     #Posición del pacman
-    x = int(np.random.randint(15,17))
+    x = int(np.random.randint(10,13))
     y = int(np.random.randint(9,10))
     pos_pacman =(y,x)
     #Posición del fantasma
@@ -765,11 +762,12 @@ if __name__ == '__main__':
         runGames( **args )
         import matplotlib.pyplot as plt
         import numpy as np
-        # x= np.loadtxt("datos/score.txt")
-        # plt.plot(x)
-        # plt.xlabel("Episodios")
-        # plt.ylabel("Recompenza promedio")
-        # plt.savefig("datos/recomp_prom.png")
+        y = np.loadtxt("datos/score_1000.txt")
+        x = np.linspace(0,args["numGames"],len(y))
+        plt.plot(x,y)
+        plt.xlabel("Episodios")
+        plt.ylabel("Recompenza promedio")
+        plt.savefig("datos/recomp_prom.png")
 
 
 
