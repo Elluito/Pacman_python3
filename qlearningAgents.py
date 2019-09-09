@@ -35,9 +35,9 @@ SOUTH = 'South'
 EAST = 'East'
 WEST = 'West'
 STOP = 'Stop'
-EPS_START = 0.9
-EPS_END = 0.1
-EPS_DECAY = 20
+EPS_START = 1
+EPS_END = 0.05
+EPS_DECAY = 0.999653
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -45,12 +45,12 @@ BATCH_SIZE = 500
 
 from pacman import GameState
 def dar_features(state:GameState):
-    posicición_pacman = state.getPacmanPosition()
-    posicición_fantasma = state.getGhostPosition(1)
+    posición_pacman = state.getPacmanPosition()
+    posición_fantasma = state.getGhostPosition(1)
     temp = np.nonzero(np.array(state.getFood().data))
-    posicición_comida = (int(temp[0]),int(temp[1]))
-    distancia_a_comida =np.linalg.norm(np.array(posicición_pacman)-np.array(posicición_comida))
-    res =[distancia_a_comida]+list(posicición_pacman)+list(posicición_fantasma)
+    posición_comida = (int(temp[0]),int(temp[1]))
+    distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posición_comida))
+    res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
     return res
 
 class ReplayMemory(object):
@@ -99,6 +99,7 @@ class Policy:
             # keras.layers.Dropout(rate=0.6),
             keras.layers.Dense(self.action_space, activation="linear")])
         self.model.compile(loss="mse",optimizer=tf.train.RMSPropOptimizer(0.01))
+        print("compile")
 
         if load_name is not None: self.model = keras.models.load_model(load_name)
 
@@ -136,23 +137,17 @@ class Policy:
 
     def update_policy(self,agent):
         if len(self.memory) < BATCH_SIZE:
-            return
+                    return
         transitions = self.memory.sample(BATCH_SIZE)
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
         # to Transition of batch-arrays.
         batch = Transition(*zip(*transitions))
-
         state_batch = batch.state
-        # state_batch = list(map(str, state_batch))
-        # state_batch = list(map(self.mapeo_fn, state_batch))
-        # state_batch = list(map(np.transpose, state_batch))
         state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, 5))
-
         action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
-        # action_batch=list(map(tuple, action_batch))
         reward_batch = np.array(batch.reward)
-        reward_batch = (reward_batch-np.mean(reward_batch))/np.std(reward_batch)
+        reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
 
 
         # Compute a mask of non-final states and concatenate the batch elements
@@ -167,69 +162,19 @@ class Policy:
 
         next_state_values = np.zeros([BATCH_SIZE],dtype =float)
         non_final_next_states = list(map(dar_features, non_final_next_states))
-        # non_final_next_states = list(map(self.mapeo_fn, non_final_next_states))
-        # non_final_next_states = list(map(np.transpose,non_final_next_states))
         non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1,5))
         next_state_values[non_final_mask] = np.max(self.model.predict([non_final_next_states]),axis=1)
-        real_q_values = []
-
-
-
         q_update = (reward_batch+ self.gamma * next_state_values)
         q_values = self.model.predict([state_batch])
         q_values[action_batch[:,0],action_batch[:,1]] = q_update
-        salidas = self.model.fit(state_batch, q_values, batch_size=len(reward_batch),epochs=20,verbose=0)
+        salidas = self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
 
-        print("Salida modelo: "+str(self.model.predict(state_batch)[0,:]))
-        print("q_values: "+str(q_values[0,:]))
+        # print("Salida modelo: "+str(self.model.predict(state_batch)[0,:]))
+        # print("q_values: "+str(q_values[0,:]))
 
 
 
         # cosa = salidas.history["loss"]
-        #
-
-
-
-
-
-
-        # q_values = self.model([non_final_next_states])
-        # for i in range(len(non_final_next_states)):
-        #     elem = np.max(q_values[i]) if np.random.rand() > self.epsilon else q_values[i][np.random.randint(0,5)]
-        #     real_q_values.append(np.float64(elem))
-        #
-        # real_q_values =np.array(real_q_values)
-        # #tf.reduce_max(self.model([non_final_next_states]), axis=1)
-        # next_state_values[non_final_mask] = real_q_values
-        #
-        # expected_state_action_values = (next_state_values * self.gamma) + reward_batch
-
-        # TODO aquí tengo que escoger epsilon greedy la acion en el proximo estado
-
-        # Compute the expected Q values
-
-        # Calculate loss
-        #
-        # with tf.GradientTape() as tape:
-
-
-
-            #aqu'i en vez de   hacerlo como lo dijo Edwin escog'i la acci'on, no dije que eran  5 salidas de de la red si no que escog'i una de esas 5 salidas
-
-        # state_values = tf.gather_nd(self.model.predict([state_batch]),action_batch)
-
-
-        # loss = tf.losses.huber_loss(state_values,expected_state_action_values)
-
-
-            # actions = tf.multiply(actions,1/np.sum(actions,axis=1,dtype=np.float).reshape(-1,1))
-        # self.model.fit(state_batch,expected_state_action_values, verbose=0)
-        # grads = tape.gradient(loss, self.model.trainable_variables)
-        # self.loss_history.append(loss.numpy())
-        # del tape
-        # del tape
-        # self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables), self.global_step)
-
 
 class QLearningAgent(ReinforcementAgent):
     """
@@ -267,7 +212,9 @@ class QLearningAgent(ReinforcementAgent):
         width = layout.width
         height = layout.height
         self.extractor = SimpleExtractor()
-        self.num_trans =0
+        self.num_trans = 0
+        self.lastReward= 0
+        self.n = 0
 
         self.policy = Policy(width, height, 5)
 
@@ -300,6 +247,9 @@ class QLearningAgent(ReinforcementAgent):
         "*** YOUR CODE HERE ***"
         util.raiseNotDefined()
 
+    def set_start_time(self):
+        self.episodeStartTime =time.time()
+
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
@@ -313,34 +263,22 @@ class QLearningAgent(ReinforcementAgent):
         """
         # Pick Action
         features = dar_features(state)
-        # filas = str(state).split("\n")
-        #
-        # imagen = np.zeros((self.policy.height, self.policy.width))
-        # for i in range(self.policy.height):
-        #     for j in range(self.policy.width):
-        #         imagen[i, j] = self.mapeo[filas[i][j]] / self.escala
-        #
-        # # legalActions = self.getLegalActions(state)
-        #
-        # "*** YOUR CODE HERE ***"
-        #
-        # new_state = np.transpose(imagen.reshape((-1, 1)))
-        logits = self.policy.model.predict(np.array(features).reshape(1,-1))
-        logits = np.exp(logits) / (np.sum(np.exp(logits)) + 0.01)
-        logits = np.random.multinomial(1,logits[0])
-        accion = np.argmax(logits) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
+        Q = self.policy.model.predict(np.array(features).reshape(1,-1))
+        # logits = np.exp(-logits) / (np.sum(np.exp(-logits)) + 0.01)
+        # logits = np.random.multinomial(1,logits[0])
+        accion = np.argmax(Q) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
         action = self.actions[accion]
 
         # util.raiseNotDefined()
-        if  not self.prueba:
-            eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-                            math.exp(-1. * self.episodesSoFar / EPS_DECAY)
+        if  not self.prueba :
+            eps_threshold = EPS_START*(EPS_DECAY**(self.episodesSoFar))
+
 
             self.epsilon = eps_threshold
+            self.n +=1
+        # print(f"imprimo el n: {self.n:d}")
 
-        if self.episodesSoFar==500:
-             r=0
-
+        # print(self.policy.model.predict(np.array(features).reshape(1,-1)))
 
         return action
 
@@ -355,6 +293,8 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         self.policy.memory.push(dar_features( state), self.actions.index(action), nextState, reward)
+        self.lastReward = reward
+        # self.policy.update_policy(self)
 
 
 
