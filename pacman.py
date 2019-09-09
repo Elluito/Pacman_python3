@@ -45,7 +45,8 @@ from game import Directions
 from game import Actions
 from util import nearestPoint
 from util import manhattanDistance
-import util, layout
+import util
+import layout as Mlayout
 import sys, types, time, random, os
 
 ###################################################
@@ -536,7 +537,7 @@ def readCommand( argv ):
     if options.fixRandomSeed: random.seed('cs188')
 
     # Choose a layout
-    args['layout'] = layout.getLayout( options.layout )
+    args['layout'] = Mlayout.getLayout(options.layout )
     if args['layout'] == None: raise Exception("The layout " + options.layout + " cannot be found")
 
     # Choose a Pacman agent
@@ -642,18 +643,23 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 
     rules = ClassicGameRules(timeout)
     games = []
-    # TODO aquí esta los  juegos que se juegan tocaría tener el agente (policy) por fuera del  agente.
-
-    open("datos/score_1000.txt", "w").close()
+    nombre_archivo =input("Nombre archivo\n")
+    open("datos/"+nombre_archivo+".txt", "w").close()
+    open("datos/epsilon.txt", "w").close()
+    from qlearningAgents import PacmanQAgent
 
     score_prom = 0
+    # if isinstance(pacman,PacmanQAgent):
+    #     pacman.policy.load_Model("models/modelo_50k.h5")
+    #     pacman.epsilon =0
+    n=0
 
     for i in range( numGames ):
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
         beQuiet = i < numTraining
 
-        global EPISODES
+
 
         EPISODES = i
         if beQuiet:
@@ -664,18 +670,28 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         else:
             gameDisplay = display
             rules.quiet = False
-        from qlearningAgents import PacmanQAgent
-        if isinstance(pacman,PacmanQAgent):
-            pacman.policy.load_Model("models/modelo_1000.h5")
-            pacman.epsilon =0
+
+        crear_layout()
+        layout = Mlayout.getLayout("campo")
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
-        game.run(score_prom,EPISODES)
-        if i%50 == 0:
+        r,e = game.run(EPISODES)
+
+
+        score_prom += 1 / (n+ 1) * (r - score_prom)
+        n+=1
+
+        if i % 10 == 0:
             print(score_prom)
-            f = open("datos/score_1000.txt", "a")
+            f = open("datos/"+nombre_archivo+".txt", "a")
             f.write(str(score_prom) + "\n")
             f.close()
+            f = open("datos/epsilon.txt", "a")
+            f.write(str(e) + "\n")
+            f.close()
+            score_prom = 0
+            n=0
+
 
 
         if not beQuiet: games.append(game)
@@ -687,8 +703,9 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
+
     # if isinstance( pacman,PacmanQAgent):
-    #     pacman.policy.saveModel("modelo_1000")
+    #     pacman.policy.saveModel("modelo_50K")
 
 
     if (numGames-numTraining) > 0:
@@ -709,12 +726,12 @@ def crear_layout():
     #La posición de la comida
     pos_comida = (10,10)
     #Posición del pacman
-    x = int(np.random.randint(10,13))
-    y = int(np.random.randint(9,10))
+    x = int(np.random.randint(11,15))
+    y = int(np.random.randint(11,15))
     pos_pacman =(y,x)
     #Posición del fantasma
     xf = int(np.random.randint(1,3))
-    yf = int(np.random.randint(3,5))
+    yf = int(np.random.randint(1,5))
     pos_fantasma = (yf,xf)
 
     #Construyo las paredes
@@ -757,22 +774,33 @@ if __name__ == '__main__':
     
         > python pacman.py --help
         """
-        crear_layout()
+        # crear_layout()
         args = readCommand( sys.argv[1:] ) # Get game components based on input
         runGames( **args )
         import matplotlib.pyplot as plt
         import numpy as np
-        y = np.loadtxt("datos/score_1000.txt")
+        # nombre_archivo = input("Nombre archivo otra ves\n")
+        nombre_archivo = "score"
+        y = np.loadtxt("datos/"+nombre_archivo+".txt")
         x = np.linspace(0,args["numGames"],len(y))
         plt.plot(x,y)
         plt.xlabel("Episodios")
-        plt.ylabel("Recompenza promedio")
-        plt.savefig("datos/recomp_prom.png")
+        plt.ylabel("Recompensa ")
+        # nombre_fig = input("Nombre figura\n")
+        nombre_fig = "score_mandar"
+        plt.savefig("datos/"+nombre_fig+".png")
 
+        #
+        #
+        plt.figure()
+        fig, ax = plt.subplots()
+        x = np.loadtxt("datos/epsilon.txt")
+        ax.plot(x, y)
+        ax.set_xlim(1,0)
+        plt.xlabel("Epilon")
+        plt.ylabel("Recompensa ")
+        # nombre_fig = input("Nombre figura epsilon\n")
+        nombre_fig = "epsilon_mandar"
+        plt.savefig("datos/" + nombre_fig + ".png")
 
-
-
-
-        # import cProfile
-        # cProfile.run("runGames( **args )")
         pass
