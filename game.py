@@ -572,11 +572,12 @@ class Game:
         sys.stderr = OLD_STDERR
 
 
-    def run( self,score_prom,EPISODES ):
+    def run( self,EPISODES ):
 
         """
         Main control loop for game play.
         """
+        self.agents[0].last_episode = EPISODES
         self.display.initialize(self.state.data)
         self.numMoves = 0
 
@@ -621,12 +622,19 @@ class Game:
         agentIndex = self.startingIndex
         numAgents = len( self.agents )
         # TODO dejo esto aquí pues es donde empieza
+
+        self.agents[0].n =0
+        res = 0
+        m = 0
         while not self.gameOver:
             # Fetch the next agent
             agent = self.agents[agentIndex]
 
 
-            move_time = 0
+
+
+
+            mov = 0
             skip_action = False
             # Generate an observation of the state
             if 'observationFunction' in dir( agent ):
@@ -724,11 +732,13 @@ class Game:
             agentIndex = ( agentIndex + 1 ) % numAgents
 
             if _BOINC_ENABLED:
-
                 boinc.set_fraction_done(self.getProgress())
 
+            res += 1/(m+1)*(self.agents[0].lastReward-res)
+            m += 1
 
-        score_prom += 1 / (EPISODES + 1) * (self.state.getScore() - score_prom)
+
+
         print(f"Episodio: {EPISODES:d}")
 
         # inform a learning agent of the game result
@@ -739,9 +749,8 @@ class Game:
                 try:
                     self.mute(agentIndex)
                     agent.final( self.state )
-                    agent.policy.update_policy(agent)
-
-
+                    if not agent.prueba:
+                        agent.policy.update_policy(agent)
                     self.unmute()
                 except Exception:
                     if not self.catchExceptions: raise
@@ -749,4 +758,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return self.state.getScore()
+        return res,self.agents[0].epsilon
