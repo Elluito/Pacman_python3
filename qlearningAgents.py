@@ -37,21 +37,28 @@ WEST = 'West'
 STOP = 'Stop'
 EPS_START = 1
 EPS_END = 0.05
-EPS_DECAY = 0.999653
-
+EPS_DECAY = 0.9997
+HEIGTH = 19
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 500
 
 from pacman import GameState
-def dar_features(state:GameState):
-    posición_pacman = state.getPacmanPosition()
-    posición_fantasma = state.getGhostPosition(1)
-    temp = np.nonzero(np.array(state.getFood().data))
-    posición_comida = (int(temp[0]),int(temp[1]))
-    distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posición_comida))
-    res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
-    return res
+def dar_features(policy,state:GameState):
+    # posición_pacman = state.getPacmanPosition()
+    # posición_fantasma = state.getGhostPosition(1)
+    # temp = np.nonzero(np.array(state.getFood().data))
+    # posición_comida = (int(temp[0]),int(temp[1]))
+    # distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posición_comida))
+    # res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
+    res = str(state.data).split("\n")
+    print(res)
+    s = []
+    for i in range(policy.height):
+        trans = list(map(lambda s:policy.mapeo[s]/policy.escala,res[i]))
+        s.extend(trans)
+
+    return s
 
 class ReplayMemory(object):
 
@@ -92,10 +99,11 @@ class Policy:
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 10}
+        self.escala = 255
 
         self.model = keras.Sequential([
-            # keras.layers.Dense(128, activation=tf.nn.relu, use_bias=False, input_shape=(self.height * self.width,)),
-            keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False,input_shape=(5,)),
+            keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
+            keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False),
             # keras.layers.Dropout(rate=0.6),
             keras.layers.Dense(self.action_space, activation="linear")])
         self.model.compile(loss="mse",optimizer=tf.train.RMSPropOptimizer(0.01))
@@ -144,7 +152,7 @@ class Policy:
         # to Transition of batch-arrays.
         batch = Transition(*zip(*transitions))
         state_batch = batch.state
-        state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, 5))
+        state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, self.width*self.height))
         action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
         reward_batch = np.array(batch.reward)
         reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
@@ -161,8 +169,8 @@ class Policy:
 
 
         next_state_values = np.zeros([BATCH_SIZE],dtype =float)
-        non_final_next_states = list(map(dar_features, non_final_next_states))
-        non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1,5))
+        non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
+        non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1,self.height*self.width))
         next_state_values[non_final_mask] = np.max(self.model.predict([non_final_next_states]),axis=1)
         q_update = (reward_batch+ self.gamma * next_state_values)
         q_values = self.model.predict([state_batch])
@@ -262,7 +270,7 @@ class QLearningAgent(ReinforcementAgent):
           HINT: To pick randomly from a list, use random.choice(list)
         """
         # Pick Action
-        features = dar_features(state)
+        features = dar_features(self.policy,state)
         Q = self.policy.model.predict(np.array(features).reshape(1,-1))
         # logits = np.exp(-logits) / (np.sum(np.exp(-logits)) + 0.01)
         # logits = np.random.multinomial(1,logits[0])
@@ -292,7 +300,7 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        self.policy.memory.push(dar_features( state), self.actions.index(action), nextState, reward)
+        self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
         self.lastReward = reward
         # self.policy.update_policy(self)
 
