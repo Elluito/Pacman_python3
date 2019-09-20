@@ -651,12 +651,14 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 
     score_prom = 0
     prob = []
-    if isinstance(pacman,PacmanQAgent):
-        pacman.policy.load_Model("models/modelo_10k_imagen.h5")
-        pacman.epsilon =0
+    # if isinstance(pacman,PacmanQAgent):
+    #     pacman.policy.load_Model("models/modelo_10k_imagen.h5")
+    #     pacman.epsilon =0
     n=0
 
     for i in range( numGames ):
+        if isinstance(pacman, PacmanQAgent):
+            pacman.policy.saveModel("modelo_imagen")
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
         beQuiet = i < numTraining
@@ -711,9 +713,9 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
-    #
+
     # if isinstance( pacman,PacmanQAgent):
-    #     pacman.policy.saveModel("modelo_10k_imagen")
+    #     pacman.policy.saveModel("modelo_imagen")
 
 
     if (numGames-numTraining) > 0:
@@ -787,38 +789,38 @@ if __name__ == '__main__':
         runGames( **args )
         import matplotlib.pyplot as plt
         import numpy as np
-        # nombre_archivo = input("Nombre archivo otra ves\n")
-        # nombre_archivo = "score"
-        # y = np.loadtxt("datos/"+nombre_archivo+".txt")
-        # x = np.linspace(0,args["numGames"],len(y))
-        # plt.plot(x,y)
-        # plt.xlabel("Episodios")
-        # plt.ylabel("Recompensa ")
-        # # nombre_fig = input("Nombre figura\n")
-        # nombre_fig = "score_mandar_10k_imagen"
-        # plt.savefig("datos/"+nombre_fig+".png")
-        #
-        # plt.figure()
-        # ###### pinto la probabilidad de ganar
-        # nombre_archivo = "prob"
-        # y = np.loadtxt("datos/" + nombre_archivo + ".txt")
-        # x = np.linspace(0, args["numGames"], len(y))
-        # plt.plot(x, y)
-        # plt.xlabel("Episodios transcurridos")
-        # plt.ylabel("Probabilidad de ganar")
-        # # nombre_fig = input("Nombre figura\n")
-        # nombre_fig = "prob_10k_imagen"
-        # plt.savefig("datos/" + nombre_fig + ".png")
-        #
-        # plt.figure()
-        # fig, ax = plt.subplots()
-        # x = np.loadtxt("datos/epsilon.txt")
-        # ax.plot(x, y)
-        # ax.set_xlim(max(x),min(x))
-        # plt.xlabel("Epilon")
-        # plt.ylabel("Recompensa ")
-        # # nombre_fig = input("Nombre figura epsilon\n")
-        # nombre_fig = "epsilon_mandar_10k_imagen"
-        # plt.savefig("datos/" + nombre_fig + ".png")
+        nombre_archivo = input("Nombre archivo otra ves\n")
+        nombre_archivo = "score"
+        y = np.loadtxt("datos/"+nombre_archivo+".txt")
+        x = np.linspace(0,args["numGames"],len(y))
+        plt.plot(x,y)
+        plt.xlabel("Episodios")
+        plt.ylabel("Recompensa ")
+        # nombre_fig = input("Nombre figura\n")
+        nombre_fig = "score_mandar_10k_imagen"
+        plt.savefig("datos/"+nombre_fig+".png")
+
+        plt.figure()
+        ###### pinto la probabilidad de ganar
+        nombre_archivo = "prob"
+        y = np.loadtxt("datos/" + nombre_archivo + ".txt")
+        x = np.linspace(0, args["numGames"], len(y))
+        plt.plot(x, y)
+        plt.xlabel("Episodios transcurridos")
+        plt.ylabel("Probabilidad de ganar")
+        # nombre_fig = input("Nombre figura\n")
+        nombre_fig = "prob_10k_imagen"
+        plt.savefig("datos/" + nombre_fig + ".png")
+
+        plt.figure()
+        fig, ax = plt.subplots()
+        x = np.loadtxt("datos/epsilon.txt")
+        ax.plot(x, y)
+        ax.set_xlim(max(x),min(x))
+        plt.xlabel("Epilon")
+        plt.ylabel("Recompensa ")
+        # nombre_fig = input("Nombre figura epsilon\n")
+        nombre_fig = "epsilon_mandar_10k_imagen"
+        plt.savefig("datos/" + nombre_fig + ".png")
 
         pass
