@@ -643,7 +643,8 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 
     rules = ClassicGameRules(timeout)
     games = []
-    nombre_archivo =input("Nombre archivo\n")
+    # nombre_archivo =input("Nombre archivo\n")
+    nombre_archivo= "score"
     open("datos/"+nombre_archivo+".txt", "w").close()
     open("datos/epsilon.txt", "w").close()
     open("datos/prob.txt", "w").close()
@@ -737,7 +738,7 @@ def crear_layout():
     pos_comida = (10,10)
     #Posición del pacman
     x = int(np.random.randint(11,15))
-    y = int(np.random.randint(11,15))
+    y = int(np.random.randint(9,15))
     pos_pacman =(y,x)
     #Posición del fantasma
     xf = int(np.random.randint(1,3))
@@ -789,7 +790,7 @@ if __name__ == '__main__':
         runGames( **args )
         import matplotlib.pyplot as plt
         import numpy as np
-        nombre_archivo = input("Nombre archivo otra ves\n")
+        # nombre_archivo = input("Nombre archivo otra ves\n")
         nombre_archivo = "score"
         y = np.loadtxt("datos/"+nombre_archivo+".txt")
         x = np.linspace(0,args["numGames"],len(y))
@@ -809,7 +810,7 @@ if __name__ == '__main__':
         plt.xlabel("Episodios transcurridos")
         plt.ylabel("Probabilidad de ganar")
         # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "prob_10k_imagen"
+        nombre_fig = "prob"
         plt.savefig("datos/" + nombre_fig + ".png")
 
         plt.figure()

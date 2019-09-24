@@ -37,7 +37,7 @@ WEST = 'West'
 STOP = 'Stop'
 EPS_START = 1
 EPS_END = 0.05
-EPS_DECAY = 0.9904
+EPS_DECAY = 0.998503
 HEIGTH = 19
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -45,29 +45,24 @@ BATCH_SIZE = 500
 from segtree import SumSegmentTree, MinSegmentTree
 from pacman import GameState
 def dar_features(policy,state:GameState):
-    # posición_pacman = state.getPacmanPosition()
-    # posición_fantasma = state.getGhostPosition(1)
-    # temp = np.nonzero(np.array(state.getFood().data))
-    # posición_comida = (int(temp[0]),int(temp[1]))
-    # distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posición_comida))
-    # res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
-    res = str(state.data).split("\n")
-
-    s = []
-    for i in range(policy.height):
-        trans = list(map(lambda s:policy.mapeo[s]/policy.escala,res[i]))
-        s.extend(trans)
-
-    return s
-def  custom_loss(pesos):
+    if not policy.use_image:
+        posición_pacman = state.getPacmanPosition()
+        posición_fantasma = state.getGhostPosition(1)
+        temp = np.nonzero(np.array(state.getFood().data))
+        if state.data._win:
+            posición_comida = posición_pacman
+        else:
+            posición_comida = (int(temp[0]),int(temp[1]))
+        distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posición_comida))
+        res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
+        return res
+    else:
+        return  policy.mapeo_fn(state)
 
 
-    def func(y_true,y_pred):
-        errors = tf.losses.huber_loss(y_true, y_pred)
-        weigthed_errors = tf.reduce_mean(pesos * errors)
-        return weigthed_errors
 
-    return func
+
+
 
 class ReplayBuffer(object):
         def __init__(self, size):
@@ -266,49 +261,62 @@ class ReplayMemory(object):
 
 class Policy:
 
-    def __init__(self, width, height, dim_action, gamma=0.98, load_name=None):
+    def __init__(self, width, height, dim_action, gamma=0.98, load_name=None,use_prior =False,use_image =False):
         tf.enable_eager_execution()
         self.width = width
         self.height = height
         tf.logging.set_verbosity(tf.logging.ERROR)
-
-        # self.state_space = dim_state
+        self.priority = use_prior
+        if use_image:
+            self.state_space = self.height*self.width
+        else:
+            self.state_space = 5
         self.action_space = dim_action
-
+        self.use_image = use_image
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
-        self.priority_memory = PrioritizedReplayBuffer(10000,0.4)
+        self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = 0.1
-
+        self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 10}
         self.escala = 255
-
-        self.model = keras.Sequential([
-            keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
-            keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False),
-            # keras.layers.Dropout(rate=0.6),
-            keras.layers.Dense(self.action_space, activation="linear")])
-        self.model.compile(loss="mse",optimizer=tf.train.RMSPropOptimizer(0.01))
+        if self.use_image:
+            self.model = keras.Sequential([
+                keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.state_space,)),
+                keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False),
+                # keras.layers.Dropout(rate=0.6),
+                keras.layers.Dense(self.action_space, activation="linear")])
+            if not use_prior:
+                self.model.compile(loss="mse", optimizer=tf.train.RMSPropOptimizer(0.01))
+        else:
+            self.model = keras.Sequential([
+                # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
+                keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False,input_shape=(self.state_space,)),
+                # keras.layers.Dropout(rate=0.6),
+                keras.layers.Dense(self.action_space, activation="linear")])
+            self.model.compile(loss=lambda y_t,y_pred: self.func(y_pred=y_pred,y_true=y_t),optimizer=tf.train.RMSPropOptimizer(0.01))
+            if not use_prior:
+                self.model.compile(loss="mse",optimizer=tf.train.RMSPropOptimizer(0.01))
         print("compile")
 
         if load_name is not None: self.model = keras.models.load_model(load_name)
 
-        self.optimizer = tf.train.AdamOptimizer()
+        self.optimizer =tf.train.RMSPropOptimizer(0.01)
 
         self.device = "GPU:1"
-        # gpus = getGPUs( )
-        # if gpus : self.device = gpus[0]
+
 
         # Episode policy and reward history
-        self.state_history = []
-        self.action_history = []
-        self.reward_episode = []
 
-        # Overall reward and loss history
-        self.reward_history = []
-        self.loss_history = []
+    # @tf.function
+    def func(self,y_true, y_pred):
+        errors = tf.pow(tf.reduce_sum(y_true- y_pred, axis=1), 2)
+        print(self.pesos)
+
+        loss = tf.reduce_mean(tf.multiply(self.pesos, errors))
+        return loss
 
     def load_Model(self, load_name=None):
         self.model = keras.models.load_model(load_name)
@@ -327,66 +335,86 @@ class Policy:
 
         return imagen.reshape((-1, 1))
 
-    def update_policy(self,agent,priority):
-        if  not priority:
-            if len(self.memory) < BATCH_SIZE:
-                        return
-            transitions = self.memory.sample(BATCH_SIZE)
-            # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
-            # detailed explanation). This converts batch-array of Transitions
-            # to Transition of batch-arrays.
-            batch = Transition(*zip(*transitions))
-            state_batch = batch.state
-            state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, self.width*self.height))
-            action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
-            reward_batch = np.array(batch.reward)
-            reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
+    def update_policy(self):
+        if not self.priority:
+
+                if len(self.memory) < BATCH_SIZE:
+                            return
+                transitions = self.memory.sample(BATCH_SIZE)
+                # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+                # detailed explanation). This converts batch-array of Transitions
+                # to Transition of batch-arrays.
+                batch = Transition(*zip(*transitions))
+                state_batch = batch.state
+                state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, self.state_space))
+                action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
+                reward_batch = np.array(batch.reward)
+                reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
 
 
-            # Compute a mask of non-final states and concatenate the batch elements
-            # (a final state would've been the one after which simulation ended)
-            non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
-                                      dtype=np.int)
-            non_final_mask = np.nonzero(non_final_mask)[0]
-            non_final_next_states = [s for s in batch.next_state
-                                     if not s.data._lose and not s.data._win]
+                # Compute a mask of non-final states and concatenate the batch elements
+                # (a final state would've been the one after which simulation ended)
+                non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
+                                          dtype=np.int)
+                non_final_mask = np.nonzero(non_final_mask)[0]
+                non_final_next_states = [s for s in batch.next_state
+                                         if not s.data._lose and not s.data._win]
 
 
 
-            next_state_values = np.zeros([BATCH_SIZE],dtype =float)
-            non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-            non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1,self.height*self.width))
-            next_state_values[non_final_mask] = np.max(self.model.predict([non_final_next_states]),axis=1)
-            q_update = (reward_batch+ self.gamma * next_state_values)
-            q_values = self.model.predict([state_batch])
-            q_values[action_batch[:,0],action_batch[:,1]] = q_update
+                next_state_values = np.zeros([BATCH_SIZE],dtype =float)
+                non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
+                non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1,self.state_space))
+                next_state_values[non_final_mask] = np.max(self.model.predict([non_final_next_states]),axis=1)
+                q_update = (reward_batch+ self.gamma * next_state_values)
+                q_values = self.model.predict([state_batch])
+                q_values[action_batch[:,0],action_batch[:,1]] = q_update
 
-
-            # loss = tf.losses.mean_squared_error(self.model.predict(state_batch),q_values)
-            # loss = tf.mean(tf.math.mul(loss,pesos))
-            #
-            #
-            self.model.compile(loss="mse", optimizer=tf.train.RMSPropOptimizer(0.01))
-            salidas = self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
+                self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
 
 
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
             obs_batch, act_batch, rew_batch, next_obs_batch, not_done_mask, weights, indxes = self.priority_memory.sample(BATCH_SIZE,0.5)
+            self.pesos = np.array(weights,dtype=np.float32)
             non_final_mask = np.where(not_done_mask==0)[0]
             act_batch = np.array([list(range(len(act_batch))), act_batch]).transpose()
             next_state_values = np.zeros([BATCH_SIZE], dtype=float)
             next_state_values[non_final_mask] = np.max(self.model.predict(next_obs_batch[non_final_mask]), axis=1)
 
             rew_batch = (rew_batch - np.mean(rew_batch)) / (np.std(rew_batch) + 0.001)
+            # rew_batch = rew_batch/max(np.abs(rew_batch))
 
             q_update = (rew_batch + self.gamma * next_state_values)
             q_values = self.model.predict([obs_batch])
             q_values[act_batch[:, 0], act_batch[:, 1]] = q_update
-            self.model.compile(loss=custom_loss(weights), optimizer=tf.train.RMSPropOptimizer(0.01))
-            salidas = self.model.fit(obs_batch, q_values, batch_size=len(q_values), epochs=20, verbose=0)
 
+            with tf.GradientTape() as tape:
+                # tape.watch(self.model.trainable_variables)
+                y_pred = self.model([obs_batch],training=True)
+
+
+                errors = tf.pow(tf.reduce_sum(q_values-y_pred,axis=1),2)
+
+                # loss = tf.reduce_mean(tf.multiply(weights,errors))
+                loss = tf.reduce_mean(errors)
+
+            grads = tape.gradient(loss, self.model.trainable_variables)
+            del tape
+
+            # grads = self.optimizer.compute_gradients(f,self.model.trainable_variables)
+
+
+            # for i,elem in enumerate(grads):
+            #     grads[i] =elem[1].numpy()
+
+            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+
+
+
+            # salidas = self.model.fit(obs_batch, q_values, batch_size=len(q_values), epochs=20, verbose=0)
+            # print(salidas.history["loss"])
             td_error = self.model.predict([obs_batch])[act_batch[:, 0], act_batch[:, 1]]-q_update
             self.priority_memory.update_priorities(indxes, abs(td_error))
 
@@ -430,12 +458,12 @@ class QLearningAgent(ReinforcementAgent):
         layout = args["layout"]
         width = layout.width
         height = layout.height
-        self.extractor = SimpleExtractor()
+
         self.num_trans = 0
         self.lastReward= 0
         self.n = 0
 
-        self.policy = Policy(width, height, 5)
+        self.policy = Policy(width, height, 5,use_image=False,use_prior=True)
 
     def getQValue(self, state, action):
         """
@@ -483,6 +511,7 @@ class QLearningAgent(ReinforcementAgent):
         # Pick Action
         features = dar_features(self.policy,state)
         Q = self.policy.model.predict(np.array(features).reshape(1,-1))
+
         # logits = np.exp(-logits) / (np.sum(np.exp(-logits)) + 0.01)
         # logits = np.random.multinomial(1,logits[0])
         accion = np.argmax(Q) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
@@ -511,8 +540,13 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        # self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
-        self.policy.priority_memory.add(dar_features( self.policy,state), self.actions.index(action), reward,dar_features(self.policy,nextState),nextState.data._win or nextState.data._lose)
+        if self.policy.priority:
+            self.policy.priority_memory.add(dar_features(self.policy, state), self.actions.index(action), reward,
+                                            dar_features(self.policy, nextState),
+                                            nextState.data._win or nextState.data._lose)
+        else:
+            self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
+
         self.lastReward = reward
         # self.policy.update_policy(self)
 
