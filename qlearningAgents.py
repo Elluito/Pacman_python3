@@ -30,6 +30,9 @@ import graphicsUtils as graphix
 import random, util, math
 
 from collections import namedtuple
+from tensorflow.python.client import device_lib
+from segtree import SumSegmentTree, MinSegmentTree
+from pacman import GameState
 NORTH = 'North'
 SOUTH = 'South'
 EAST = 'East'
@@ -37,13 +40,15 @@ WEST = 'West'
 STOP = 'Stop'
 EPS_START = 1
 EPS_END = 0.05
-EPS_DECAY = 0.998503
+EPS_DECAY = 0.999970043
 HEIGTH = 19
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-BATCH_SIZE = 500
-from segtree import SumSegmentTree, MinSegmentTree
-from pacman import GameState
+BATCH_SIZE = 128
+
+
+
+
 def dar_features(policy,state:GameState):
     if not policy.use_image:
         posición_pacman = state.getPacmanPosition()
@@ -57,7 +62,7 @@ def dar_features(policy,state:GameState):
         res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
         return res
     else:
-        return  policy.mapeo_fn(state)
+        return  np.array(policy.mapeo_fn(str(state))).reshape(policy.height,policy.width,1)
 
 
 
@@ -268,9 +273,9 @@ class Policy:
         tf.logging.set_verbosity(tf.logging.ERROR)
         self.priority = use_prior
         if use_image:
-            self.state_space = self.height*self.width
+            self.state_space = (self.height,self.width,1)
         else:
-            self.state_space = 5
+            self.state_space = (5,)
         self.action_space = dim_action
         self.use_image = use_image
         self.gamma = gamma
@@ -280,12 +285,18 @@ class Policy:
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
-        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 10}
+        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ":0}
         self.escala = 255
         if self.use_image:
             self.model = keras.Sequential([
-                keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.state_space,)),
-                keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False),
+                keras.layers.Conv2D(32, (3, 3), activation='relu',  input_shape=self.state_space),
+                keras.layers.MaxPooling2D((2, 2)),
+                # keras.layers.Conv2D(64, (3, 3), activation='relu'),
+                # keras.layers.MaxPooling2D((2, 2)),
+                # keras.layers.Conv2D(128, (3, 3), activation='relu'),
+                keras.layers.Flatten(),
+                keras.layers.Dense(128, activation=tf.nn.relu, use_bias=False,),
+                keras.layers.Dense(32, activation=tf.nn.relu, use_bias=False),
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             if not use_prior:
@@ -293,7 +304,7 @@ class Policy:
         else:
             self.model = keras.Sequential([
                 # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
-                keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False,input_shape=(self.state_space,)),
+                keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False,input_shape=self.state_space),
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             self.model.compile(loss=lambda y_t,y_pred: self.func(y_pred=y_pred,y_true=y_t),optimizer=tf.train.RMSPropOptimizer(0.01))
@@ -344,9 +355,12 @@ class Policy:
                 # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
                 # detailed explanation). This converts batch-array of Transitions
                 # to Transition of batch-arrays.
+
+                shape = [-1]
+                shape.extend(self.state_space)
                 batch = Transition(*zip(*transitions))
                 state_batch = batch.state
-                state_batch = np.array(state_batch, dtype=np.float64).reshape((-1, self.state_space))
+                state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
                 action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
                 reward_batch = np.array(batch.reward)
                 reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
@@ -364,12 +378,14 @@ class Policy:
 
                 next_state_values = np.zeros([BATCH_SIZE],dtype =float)
                 non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-                non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape((-1,self.state_space))
+                non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
                 next_state_values[non_final_mask] = np.max(self.model.predict([non_final_next_states]),axis=1)
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = self.model.predict([state_batch])
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-
+                # devices = device_lib.list_local_devices()
+                # dev=[device.name for device in devices if device.device_type == 'GPU']
+                # with tf.device(dev[0]):
                 self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
 
 
@@ -451,8 +467,7 @@ class QLearningAgent(ReinforcementAgent):
         # pdb.set_trace()
 
         "*** YOUR CODE HERE ***"
-        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ": 0}
-        self.escala = 255
+
         self.prueba =False
 
         layout = args["layout"]
@@ -463,7 +478,7 @@ class QLearningAgent(ReinforcementAgent):
         self.lastReward= 0
         self.n = 0
 
-        self.policy = Policy(width, height, 5,use_image=False,use_prior=True)
+        self.policy = Policy(width, height, 5,use_image=True,use_prior=False)
 
     def getQValue(self, state, action):
         """
@@ -510,10 +525,17 @@ class QLearningAgent(ReinforcementAgent):
         """
         # Pick Action
         features = dar_features(self.policy,state)
-        Q = self.policy.model.predict(np.array(features).reshape(1,-1))
+        if self.policy.use_image:
+            shape = [1]
+            shape.extend(self.policy.state_space)
+            Q =self.policy.model.predict(features.reshape(shape))
 
-        # logits = np.exp(-logits) / (np.sum(np.exp(-logits)) + 0.01)
-        # logits = np.random.multinomial(1,logits[0])
+
+        else:
+
+            Q = self.policy.model.predict(np.array(features).reshape(1,-1))
+
+
         accion = np.argmax(Q) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
         action = self.actions[accion]
 
