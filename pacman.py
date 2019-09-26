@@ -653,7 +653,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     score_prom = 0
     prob = []
     # if isinstance(pacman,PacmanQAgent):
-    #     pacman.policy.load_Model("models/modelo_10k_imagen.h5")
+    #     pacman.policy.load_Model("models/modelo_imagen.h5")
     #     pacman.epsilon =0
     n=0
 

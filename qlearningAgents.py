@@ -285,22 +285,27 @@ class Policy:
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
-        self.mapeo = {"%": 200, "<": 30, ">": 30, "v": 30, "^": 30, ".": 90, "G": 150, " ":0}
+        self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 200, " ":0}
         self.escala = 255
         if self.use_image:
             self.model = keras.Sequential([
-                keras.layers.Conv2D(32, (3, 3), activation='relu',  input_shape=self.state_space),
-                keras.layers.MaxPooling2D((2, 2)),
-                # keras.layers.Conv2D(64, (3, 3), activation='relu'),
-                # keras.layers.MaxPooling2D((2, 2)),
-                # keras.layers.Conv2D(128, (3, 3), activation='relu'),
+                keras.layers.Conv2D(16, (3, 3),  input_shape=self.state_space),
+                keras.layers.BatchNormalization(),
+                keras.layers.Activation("relu"),
+                keras.layers.Conv2D(32, (3, 3),use_bias=False),
+                keras.layers.BatchNormalization(),
+                keras.layers.Activation("relu"),
+                keras.layers.Conv2D(32, (3, 3),use_bias=False),
+                keras.layers.BatchNormalization(),
+                keras.layers.Activation("relu"),
                 keras.layers.Flatten(),
-                keras.layers.Dense(128, activation=tf.nn.relu, use_bias=False,),
-                keras.layers.Dense(32, activation=tf.nn.relu, use_bias=False),
+                # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False),
+                # keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False),
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             if not use_prior:
-                self.model.compile(loss="mse", optimizer=tf.train.RMSPropOptimizer(0.01))
+                self.model.compile(loss=tf.losses.huber_loss, optimizer=tf.train.RMSPropOptimizer(0.01))
+
         else:
             self.model = keras.Sequential([
                 # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
