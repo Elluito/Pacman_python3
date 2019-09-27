@@ -649,7 +649,8 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     open("datos/epsilon.txt", "w").close()
     open("datos/prob.txt", "w").close()
     from qlearningAgents import PacmanQAgent
-
+    if isinstance(pacman,PacmanQAgent):
+         pacman.num_episodes = numGames
     score_prom = 0
     prob = []
     # if isinstance(pacman,PacmanQAgent):
@@ -738,7 +739,7 @@ def crear_layout():
     pos_comida = (10,10)
     #Posición del pacman
     x = int(np.random.randint(11,15))
-    y = int(np.random.randint(9,15))
+    y = int(np.random.randint(11,15))
     pos_pacman =(y,x)
     #Posición del fantasma
     xf = int(np.random.randint(1,3))

@@ -38,13 +38,13 @@ SOUTH = 'South'
 EAST = 'East'
 WEST = 'West'
 STOP = 'Stop'
-EPS_START = 1
-EPS_END = 0.05
+EPS_START = 0.4
+EPS_END = 0.1
 EPS_DECAY = 0.999970043
 HEIGTH = 19
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 
 
 
@@ -266,7 +266,7 @@ class ReplayMemory(object):
 
 class Policy:
 
-    def __init__(self, width, height, dim_action, gamma=0.98, load_name=None,use_prior =False,use_image =False):
+    def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         tf.enable_eager_execution()
         self.width = width
         self.height = height
@@ -285,7 +285,7 @@ class Policy:
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
-        self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 200, " ":0}
+        self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1}
         self.escala = 255
         if self.use_image:
             self.model = keras.Sequential([
@@ -295,16 +295,16 @@ class Policy:
                 keras.layers.Conv2D(32, (3, 3),use_bias=False),
                 keras.layers.BatchNormalization(),
                 keras.layers.Activation("relu"),
-                keras.layers.Conv2D(32, (3, 3),use_bias=False),
-                keras.layers.BatchNormalization(),
-                keras.layers.Activation("relu"),
+                # keras.layers.Conv2D(32, (3, 3),use_bias=False),
+                # keras.layers.BatchNormalization(),
+                # keras.layers.Activation("relu"),
                 keras.layers.Flatten(),
                 # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False),
-                # keras.layers.Dense(32, activation=tf.nn.tanh, use_bias=False),
+                keras.layers.Dense(10, activation=tf.nn.tanh, use_bias=False),
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             if not use_prior:
-                self.model.compile(loss=tf.losses.huber_loss, optimizer=tf.train.RMSPropOptimizer(0.01))
+                self.model.compile(loss=tf.losses.huber_loss, optimizer=tf.train.RMSPropOptimizer(0.0002),metrics=['mae'])
 
         else:
             self.model = keras.Sequential([
@@ -356,6 +356,7 @@ class Policy:
 
                 if len(self.memory) < BATCH_SIZE:
                             return
+                t0=time.time()
                 transitions = self.memory.sample(BATCH_SIZE)
                 # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
                 # detailed explanation). This converts batch-array of Transitions
@@ -391,7 +392,16 @@ class Policy:
                 # devices = device_lib.list_local_devices()
                 # dev=[device.name for device in devices if device.device_type == 'GPU']
                 # with tf.device(dev[0]):
-                self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
+
+
+                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
+                t1 = time.time()
+                num = s.history["loss"][-1]
+                print(f"Loss: {num:0.5f}")
+                print(f"Traingin time: {t1-t0:0.5f} s")
+                print("q_values: " + str(q_values[0,:]))
+                print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
+
 
 
         else:
@@ -470,7 +480,7 @@ class QLearningAgent(ReinforcementAgent):
         ReinforcementAgent.__init__(self, **args)
         self.actions = [NORTH, WEST, SOUTH,EAST, STOP]
         # pdb.set_trace()
-
+        self.num_episodes = 1
         "*** YOUR CODE HERE ***"
 
         self.prueba =False
@@ -546,7 +556,8 @@ class QLearningAgent(ReinforcementAgent):
 
         # util.raiseNotDefined()
         if  not self.prueba :
-            eps_threshold = EPS_START*(EPS_DECAY**(self.episodesSoFar))
+
+            eps_threshold = EPS_START*(np.exp((np.log(EPS_END/EPS_START)/self.num_episodes))**(self.episodesSoFar))
 
 
             self.epsilon = eps_threshold
