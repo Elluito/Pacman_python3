@@ -289,18 +289,18 @@ class Policy:
         self.escala = 255
         if self.use_image:
             self.model = keras.Sequential([
-                keras.layers.Conv2D(16, (3, 3),  input_shape=self.state_space),
+                keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
                 keras.layers.BatchNormalization(),
                 keras.layers.Activation("relu"),
-                keras.layers.Conv2D(32, (3, 3),use_bias=False),
+                keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
                 keras.layers.BatchNormalization(),
                 keras.layers.Activation("relu"),
-                # keras.layers.Conv2D(32, (3, 3),use_bias=False),
-                # keras.layers.BatchNormalization(),
-                # keras.layers.Activation("relu"),
+                keras.layers.Conv2D(64, (3, 3),use_bias=False),
+                keras.layers.BatchNormalization(),
+                keras.layers.Activation("relu"),
                 keras.layers.Flatten(),
-                # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False),
-                keras.layers.Dense(10, activation=tf.nn.tanh, use_bias=False),
+                keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
+                keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             if not use_prior:
@@ -398,7 +398,7 @@ class Policy:
                 t1 = time.time()
                 num = s.history["loss"][-1]
                 print(f"Loss: {num:0.5f}")
-                print(f"Traingin time: {t1-t0:0.5f} s")
+                print(f"Training time: {t1-t0:0.5f} s")
                 print("q_values: " + str(q_values[0,:]))
                 print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
 
@@ -557,14 +557,18 @@ class QLearningAgent(ReinforcementAgent):
         # util.raiseNotDefined()
         if  not self.prueba :
 
-            eps_threshold = EPS_START*(np.exp((np.log(EPS_END/EPS_START)/self.num_episodes))**(self.episodesSoFar))
+            # eps_threshold = EPS_START*(np.exp((np.log(EPS_END/EPS_START)/self.num_episodes))**(self.episodesSoFar))
 
-
+            a =(EPS_END-EPS_START)/self.num_episodes
+            eps_threshold = EPS_START + a * (self.episodesSoFar)
             self.epsilon = eps_threshold
             self.n +=1
+        else:
+            print("imprimir")
+            print(Q)
         # print(f"imprimo el n: {self.n:d}")
 
-        # print(self.policy.model.predict(np.array(features).reshape(1,-1)))
+        #
 
         return action
 

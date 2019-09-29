@@ -653,14 +653,17 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
          pacman.num_episodes = numGames
     score_prom = 0
     prob = []
-    # if isinstance(pacman,PacmanQAgent):
-    #     pacman.policy.load_Model("models/modelo_imagen.h5")
-    #     pacman.epsilon =0
+    name = "modelo_imagen_%i" % numGames
+    if isinstance(pacman,PacmanQAgent):
+        pacman.policy.load_Model("models/modelo_imagen.h5")
+        pacman.policy.model.summary()
+        pacman.epsilon =0
     n=0
-
+    name = "modelo_imagen_%i"%numGames
     for i in range( numGames ):
-        if isinstance(pacman, PacmanQAgent):
-            pacman.policy.saveModel("modelo_imagen")
+        # if i%100==0 and not prueba:
+            # if isinstance(pacman, PacmanQAgent):
+            #     pacman.policy.saveModel(name)
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
         beQuiet = i < numTraining
@@ -682,10 +685,8 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         r,e = game.run(EPISODES)
-
-
         score_prom += 1 / (n+ 1) * (r - score_prom)
-        # prob+= 1/(n+1)*((int(game.state.isWin()))-prob)
+
         prob.append(int(game.state.isWin()))
         n+=1
 
@@ -716,8 +717,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             cPickle.dump(components, f)
             f.close()
 
-    # if isinstance( pacman,PacmanQAgent):
-    #     pacman.policy.saveModel("modelo_imagen")
+
 
 
     if (numGames-numTraining) > 0:
@@ -774,6 +774,11 @@ def crear_layout():
 
 
 
+def moving_average(a, n=3):
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
 
 if __name__ == '__main__':
         """
@@ -794,35 +799,37 @@ if __name__ == '__main__':
         # nombre_archivo = input("Nombre archivo otra ves\n")
         nombre_archivo = "score"
         y = np.loadtxt("datos/"+nombre_archivo+".txt")
+        y = moving_average(y,50)
         x = np.linspace(0,args["numGames"],len(y))
         plt.plot(x,y)
         plt.xlabel("Episodios")
         plt.ylabel("Recompensa ")
         # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "score_mandar_10k_imagen"
+        nombre_fig = "score_mandar_%i_imagen"%args["numTraining"]
         plt.savefig("datos/"+nombre_fig+".png")
 
         plt.figure()
         ###### pinto la probabilidad de ganar
         nombre_archivo = "prob"
         y = np.loadtxt("datos/" + nombre_archivo + ".txt")
+        y = moving_average(y, 50)
         x = np.linspace(0, args["numGames"], len(y))
         plt.plot(x, y)
         plt.xlabel("Episodios transcurridos")
         plt.ylabel("Probabilidad de ganar")
         # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "prob"
+        nombre_fig = "prob_%i_imagen"%args["numTraining"]
         plt.savefig("datos/" + nombre_fig + ".png")
 
         plt.figure()
         fig, ax = plt.subplots()
         x = np.loadtxt("datos/epsilon.txt")
         ax.plot(x, y)
-        ax.set_xlim(max(x),min(x))
-        plt.xlabel("Epilon")
-        plt.ylabel("Recompensa ")
+        ax.set_xlim(max(x),x[-2])
+        plt.xlabel("Epsilon")
+        plt.ylabel("Probabilidad de ganar")
         # nombre_fig = input("Nombre figura epsilon\n")
-        nombre_fig = "epsilon_mandar_10k_imagen"
+        nombre_fig = "epsilon_mandar_%i_imagen"%args["numTraining"]
         plt.savefig("datos/" + nombre_fig + ".png")
 
         pass
