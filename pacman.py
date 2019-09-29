@@ -654,16 +654,19 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     score_prom = 0
     prob = []
     name = "modelo_imagen_%i" % numGames
-    # if isinstance(pacman,PacmanQAgent):
-    #     pacman.policy.load_Model("models/modelo_imagen.h5")
-    #     pacman.policy.model.summary()
-    #     pacman.epsilon =0
+    if numTraining==0:
+        pacman.prueba = True
+        name_prueba = input("nombre para la prueba")
+    if isinstance(pacman,PacmanQAgent) and numTraining == 0:
+        pacman.policy.load_Model("models/"+name_prueba+".h5")
+        pacman.policy.model.summary()
+        pacman.epsilon =0
     n=0
-    name = "modelo_imagen_%i"%numGames
+
     for i in range( numGames ):
-        if i%100==0 and not pacman.prueba:
-            if isinstance(pacman, PacmanQAgent):
-                pacman.policy.saveModel(name)
+        # if i%100==0 and not pacman.prueba:
+        #     if isinstance(pacman, PacmanQAgent):
+        #         pacman.policy.saveModel(name)
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
         beQuiet = i < numTraining

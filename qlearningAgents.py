@@ -285,7 +285,7 @@ class Policy:
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
         self.global_step = tfe.Variable(0)
         self.loss_avg = tfe.metrics.Mean()
-        self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1}
+        self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
             self.model = keras.Sequential([
