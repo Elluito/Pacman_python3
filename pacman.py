@@ -654,16 +654,16 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     score_prom = 0
     prob = []
     name = "modelo_imagen_%i" % numGames
-    if isinstance(pacman,PacmanQAgent):
-        pacman.policy.load_Model("models/modelo_imagen.h5")
-        pacman.policy.model.summary()
-        pacman.epsilon =0
+    # if isinstance(pacman,PacmanQAgent):
+    #     pacman.policy.load_Model("models/modelo_imagen.h5")
+    #     pacman.policy.model.summary()
+    #     pacman.epsilon =0
     n=0
     name = "modelo_imagen_%i"%numGames
     for i in range( numGames ):
-        # if i%100==0 and not prueba:
-            # if isinstance(pacman, PacmanQAgent):
-            #     pacman.policy.saveModel(name)
+        if i%100==0 and not pacman.prueba:
+            if isinstance(pacman, PacmanQAgent):
+                pacman.policy.saveModel(name)
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
         beQuiet = i < numTraining
@@ -738,8 +738,8 @@ def crear_layout():
     #La posición de la comida
     pos_comida = (10,10)
     #Posición del pacman
-    x = int(np.random.randint(11,15))
-    y = int(np.random.randint(11,15))
+    x = int(np.random.randint(12,15))
+    y = int(np.random.randint(2,15))
     pos_pacman =(y,x)
     #Posición del fantasma
     xf = int(np.random.randint(1,3))
@@ -754,6 +754,19 @@ def crear_layout():
     lay[pos_comida] = "."
     lay[pos_pacman] = "P"
     lay[pos_fantasma] = "G"
+    # lay[pos_comida[0]+1,pos_comida[1]-3]="%"
+    # lay[pos_comida[0]+1, pos_comida[1]-2]= "%"
+    # lay[pos_comida[0]+1, pos_comida[1]-1]= "%"
+    # lay[pos_comida[0]+1, pos_comida[1]-0]= "%"
+    # lay[pos_comida[0]+1, pos_comida[1]+1]= "%"
+    # lay[pos_comida[0] + 1, pos_comida[1] + 2] = "%"
+    # lay[pos_comida[0] + 1, pos_comida[1] + 3] = "%"
+    lay[pos_comida[0] - 3, pos_comida[1] + 1] ="%"
+    lay[pos_comida[0] - 2, pos_comida[1] + 1] = "%"
+    lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
+    lay[pos_comida[0] + 0, pos_comida[1] + 1] = "%"
+    lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
+
 
     s = str(lay)
     s = s.replace("'\n", " ")
