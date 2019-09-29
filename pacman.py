@@ -840,6 +840,7 @@ if __name__ == '__main__':
         plt.figure()
         fig, ax = plt.subplots()
         x = np.loadtxt("datos/epsilon.txt")
+        x = moving_average(x,50)
         ax.plot(x, y)
         ax.set_xlim(max(x),x[-2])
         plt.xlabel("Epsilon")
