@@ -706,11 +706,13 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         n+=1
 
         if i % 10 == 0:
-            with  tf.contrib.summary.create_file_writer("logs\\"+NAME,
-                                                        flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
+            writer =tf.contrib.summary.create_file_writer("logs\\"+NAME,flush_millis=2500)
+            with  tf.name_scope("summaries"):
+                writer.set_as_default()
+                tf.contrib.summary.always_record_summaries()
 
-                    tf.contrib.summary.scalar("Probability",np.mean(prob))
-                    tf.contrib.summary.scalar("Mean Sore",score_prom)
+                tf.contrib.summary.scalar("Probability",np.mean(prob))
+                tf.contrib.summary.scalar("Mean Sore",score_prom)
 
             f = open("datos/"+nombre_archivo+".txt", "a")
             f.write(str(score_prom) + "\n")
