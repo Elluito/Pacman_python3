@@ -705,22 +705,25 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         prob.append(int(game.state.isWin()))
         n+=1
 
+
         if i % 10 == 0:
-            with  tf.contrib.summary.create_file_writer("logs\\"+NAME,
-                                                        flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
+            writer = tf.contrib.summary.create_file_writer("logs\\"+NAME,flush_millis=2500)
+            with tf.name_scope('summaries'):
+                    writer.set_as_default()
+                    tf.contrib.summary.always_record_summaries()
 
                     tf.contrib.summary.scalar("Probability",np.mean(prob))
                     tf.contrib.summary.scalar("Mean Sore",score_prom)
 
-            f = open("datos/"+nombre_archivo+".txt", "a")
-            f.write(str(score_prom) + "\n")
-            f.close()
-            f = open("datos/epsilon.txt", "a")
-            f.write(str(e) + "\n")
-            f.close()
-            f = open("datos/prob.txt", "a")
-            f.write(str(np.mean(prob)) + "\n")
-            f.close()
+            # f = open("datos/"+nombre_archivo+".txt", "a")
+            # f.write(str(score_prom) + "\n")
+            # f.close()
+            # f = open("datos/epsilon.txt", "a")
+            # f.write(str(e) + "\n")
+            # f.close()
+            # f = open("datos/prob.txt", "a")
+            # f.write(str(np.mean(prob)) + "\n")
+            # f.close()
             prob = []
             score_prom = 0
             n=0
@@ -829,41 +832,41 @@ if __name__ == '__main__':
         runGames( **args )
         import matplotlib.pyplot as plt
         import numpy as np
-        # nombre_archivo = input("Nombre archivo otra ves\n")
-        nombre_archivo = "score"
-        y = np.loadtxt("datos/"+nombre_archivo+".txt")
-        y = moving_average(y,50)
-        x = np.linspace(0,args["numGames"],len(y))
-        plt.plot(x,y)
-        plt.xlabel("Episodios")
-        plt.ylabel("Recompensa ")
-        # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "score_mandar_%i_imagen"%args["numTraining"]
-        plt.savefig("datos/"+nombre_fig+".png")
-
-        plt.figure()
-        ###### pinto la probabilidad de ganar
-        nombre_archivo = "prob"
-        y = np.loadtxt("datos/" + nombre_archivo + ".txt")
-        y = moving_average(y, 50)
-        x = np.linspace(0, args["numGames"], len(y))
-        plt.plot(x, y)
-        plt.xlabel("Episodios transcurridos")
-        plt.ylabel("Probabilidad de ganar")
-        # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "prob_%i_imagen"%args["numTraining"]
-        plt.savefig("datos/" + nombre_fig + ".png")
-
-        plt.figure()
-        fig, ax = plt.subplots()
-        x = np.loadtxt("datos/epsilon.txt")
-        x = moving_average(x,50)
-        ax.plot(x, y)
-        ax.set_xlim(max(x),x[-2])
-        plt.xlabel("Epsilon")
-        plt.ylabel("Probabilidad de ganar")
-        # nombre_fig = input("Nombre figura epsilon\n")
-        nombre_fig = "epsilon_mandar_%i_imagen"%args["numTraining"]
-        plt.savefig("datos/" + nombre_fig + ".png")
+        # # nombre_archivo = input("Nombre archivo otra ves\n")
+        # nombre_archivo = "score"
+        # y = np.loadtxt("datos/"+nombre_archivo+".txt")
+        # y = moving_average(y,50)
+        # x = np.linspace(0,args["numGames"],len(y))
+        # plt.plot(x,y)
+        # plt.xlabel("Episodios")
+        # plt.ylabel("Recompensa ")
+        # # nombre_fig = input("Nombre figura\n")
+        # nombre_fig = "score_mandar_%i_imagen"%args["numTraining"]
+        # plt.savefig("datos/"+nombre_fig+".png")
+        #
+        # plt.figure()
+        # ###### pinto la probabilidad de ganar
+        # nombre_archivo = "prob"
+        # y = np.loadtxt("datos/" + nombre_archivo + ".txt")
+        # y = moving_average(y, 50)
+        # x = np.linspace(0, args["numGames"], len(y))
+        # plt.plot(x, y)
+        # plt.xlabel("Episodios transcurridos")
+        # plt.ylabel("Probabilidad de ganar")
+        # # nombre_fig = input("Nombre figura\n")
+        # nombre_fig = "prob_%i_imagen"%args["numTraining"]
+        # plt.savefig("datos/" + nombre_fig + ".png")
+        #
+        # plt.figure()
+        # fig, ax = plt.subplots()
+        # x = np.loadtxt("datos/epsilon.txt")
+        # x = moving_average(x,50)
+        # ax.plot(x, y)
+        # ax.set_xlim(max(x),x[-2])
+        # plt.xlabel("Epsilon")
+        # plt.ylabel("Probabilidad de ganar")
+        # # nombre_fig = input("Nombre figura epsilon\n")
+        # nombre_fig = "epsilon_mandar_%i_imagen"%args["numTraining"]
+        # plt.savefig("datos/" + nombre_fig + ".png")
 
         pass
