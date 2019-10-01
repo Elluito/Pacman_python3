@@ -19,18 +19,14 @@ import numpy as np
 from copy import deepcopy as dpc
 import matplotlib.pyplot as plt
 import random as rnd
-import pdb;
+import pdb
 import tensorflow as tf
 from tensorflow import keras
 import tensorflow.contrib.eager as tfe
-# from tensorflow.python.client import device_lib
-
-import graphicsUtils as graphix
-
 import random, util, math
-
 from collections import namedtuple
-from tensorflow.python.client import device_lib
+
+import  tensorboard as tb
 from segtree import SumSegmentTree, MinSegmentTree
 from pacman import GameState
 NORTH = 'North'
@@ -38,7 +34,7 @@ SOUTH = 'South'
 EAST = 'East'
 WEST = 'West'
 STOP = 'Stop'
-EPS_START = 0.4
+EPS_START = 0.6
 EPS_END = 0.1
 EPS_DECAY = 0.999970043
 HEIGTH = 19
@@ -63,12 +59,6 @@ def dar_features(policy,state:GameState):
         return res
     else:
         return  np.array(policy.mapeo_fn(str(state))).reshape(policy.height,policy.width,1)
-
-
-
-
-
-
 class ReplayBuffer(object):
         def __init__(self, size):
             """Create Replay buffer.
@@ -267,10 +257,11 @@ class ReplayMemory(object):
 class Policy:
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
-        tf.enable_eager_execution()
+        # tf.enable_eager_execution()
+
         self.width = width
         self.height = height
-        tf.logging.set_verbosity(tf.logging.ERROR)
+        # tf.logging.set_verbosity(tf.logging.ERROR)
         self.priority = use_prior
         if use_image:
             self.state_space = (self.height,self.width,1)
@@ -283,8 +274,8 @@ class Policy:
         self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = 0.1
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
-        self.global_step = tfe.Variable(0)
-        self.loss_avg = tfe.metrics.Mean()
+        # self.global_step = tfe.Variable(0)
+        # self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
@@ -351,7 +342,7 @@ class Policy:
 
         return imagen.reshape((-1, 1))
 
-    def update_policy(self):
+    def update_policy(self,callbacks=[],log_dir=""):
         if not self.priority:
 
                 if len(self.memory) < BATCH_SIZE:
@@ -393,14 +384,25 @@ class Policy:
                 # dev=[device.name for device in devices if device.device_type == 'GPU']
                 # with tf.device(dev[0]):
 
-
-                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
+                # create_file_writer = tf.contrib.summary.create_file_writer
+                # w = create_file_writer(log_dir)
+                # w.close()
+                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0,callbacks=callbacks)
                 t1 = time.time()
-                num = s.history["loss"][-1]
-                print(f"Loss: {num:0.5f}")
-                print(f"Training time: {t1-t0:0.5f} s")
-                print("q_values: " + str(q_values[0,:]))
-                print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
+
+                num = s.history["loss"]
+                # writer=tf.contrib.summary.create_file_writer(log_dir, flush_millis=2500)
+                # # writer.set_as_default()
+                #
+                # with writer.set_as_default():
+                #     with tf.contrib.summary.always_record_summaries():
+                #
+                #         for elem in num:
+                #             tf.contrib.summary.scalar("Hubert Loss",elem)
+                # print(f"Loss: {num:0.5f}")
+                # print(f"Training time: {t1-t0:0.5f} s")
+                # print("q_values: " + str(q_values[0,:]))
+                # print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
 
 
 
@@ -492,6 +494,8 @@ class QLearningAgent(ReinforcementAgent):
         self.num_trans = 0
         self.lastReward= 0
         self.n = 0
+        self.eps_start = EPS_START
+        self.eps_end = EPS_END
 
         self.policy = Policy(width, height, 5,use_image=True,use_prior=False)
 
@@ -564,8 +568,8 @@ class QLearningAgent(ReinforcementAgent):
             self.epsilon = eps_threshold
             self.n +=1
         else:
-            print("imprimir")
-            print(Q)
+
+            print(action)
         # print(f"imprimo el n: {self.n:d}")
 
         #

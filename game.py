@@ -572,7 +572,7 @@ class Game:
         sys.stderr = OLD_STDERR
 
 
-    def run( self,EPISODES ):
+    def run( self,EPISODES,callbacks=[],log_dir="" ):
 
         """
         Main control loop for game play.
@@ -750,7 +750,7 @@ class Game:
                     self.mute(agentIndex)
                     agent.final( self.state )
                     if not agent.prueba:
-                        agent.policy.update_policy()
+                        agent.policy.update_policy(callbacks,log_dir=log_dir)
                     self.unmute()
                 except Exception:
                     if not self.catchExceptions: raise

@@ -48,7 +48,7 @@ from util import manhattanDistance
 import util
 import layout as Mlayout
 import sys, types, time, random, os
-
+from tensorflow import keras
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
 ###################################################
@@ -105,6 +105,8 @@ class GameState:
         # Let agent's logic deal with its action's effects on the board
         if agentIndex == 0:  # Pacman is moving
             state.data._eaten = [False for i in range(state.getNumAgents())]
+            if action not in self.getLegalPacmanActions():
+                 state.data.scoreChange-=10
             PacmanRules.applyAction( state, action )
         else:                # A ghost is moving
             GhostRules.applyAction( state, action, agentIndex )
@@ -371,7 +373,7 @@ class PacmanRules:
             # TODO: cache numFood?
             numFood = state.getNumFood()
             if numFood == 0 and not state.data._lose:
-                state.data.scoreChange += 500
+                state.data.scoreChange += 100
                 state.data._win = True
         # Eat capsule
         if( position in state.getCapsules() ):
@@ -446,7 +448,7 @@ class GhostRules:
             state.data._eaten[agentIndex] = True
         else:
             if not state.data._win:
-                state.data.scoreChange -= 500
+                state.data.scoreChange -= 100
                 state.data._lose = True
     collide = staticmethod( collide )
 
@@ -527,7 +529,8 @@ def readCommand( argv ):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
-
+    parser.add_option('-d', '--dificulty', type='float', dest='dificulty',
+                      help=default('Dificulty of the test'), default=1.0)
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
         raise Exception('Command line input not understood: ' + str(otherjunk))
@@ -604,17 +607,21 @@ def loadAgent(pacman, nographics):
 
     for moduleDir in pythonPathDirs:
         if not os.path.isdir(moduleDir): continue
-        moduleNames = [f for f in os.listdir(moduleDir) if f.endswith('gents.py')]
+        moduleNames = [f for f in os.listdir(moduleDir) if f.endswith('Agents.py')]
         for modulename in moduleNames:
+
             try:
                 module = __import__(modulename[:-3])
-                print(modulename)
+
             except ImportError:
+
+                # __import__(modulename[:-3])
                 continue
             if pacman in dir(module):
                 if nographics and modulename == 'keyboardAgents.py':
                     raise Exception('Using the keyboard requires graphics (not text display)')
                 return getattr(module, pacman)
+    print(pacman)
     raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
 
 def replayGame( layout, actions, display ):
@@ -635,14 +642,16 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 ):
+def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30,dificulty=1 ):
 
     import __main__
     import numpy as np
+    import time
     __main__.__dict__['_display'] = display
 
     rules = ClassicGameRules(timeout)
     games = []
+
     # nombre_archivo =input("Nombre archivo\n")
     nombre_archivo= "score"
     open("datos/"+nombre_archivo+".txt", "w").close()
@@ -653,7 +662,10 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
          pacman.num_episodes = numGames
     score_prom = 0
     prob = []
-    name = "modelo_imagen_%i" % numGames
+    NAME = "modelo_imagen_%i"% numGames+f"_{int(pacman.eps_start*10):d}_{int(pacman.eps_end*10):d}_dif{dificulty:d}_{int(time.time()):d}"
+
+    tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\"+NAME)
+
     if numTraining==0:
         pacman.prueba = True
         name_prueba = input("nombre para la prueba")
@@ -664,9 +676,9 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     n=0
 
     for i in range( numGames ):
-        # if i%100==0 and not pacman.prueba:
-        #     if isinstance(pacman, PacmanQAgent):
-        #         pacman.policy.saveModel(name)
+        if i%100==0 and not pacman.prueba:
+            if isinstance(pacman, PacmanQAgent):
+                pacman.policy.saveModel(NAME)
         if i >numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba =True
         beQuiet = i < numTraining
@@ -687,13 +699,18 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         layout = Mlayout.getLayout("campo")
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
-        r,e = game.run(EPISODES)
+        r,e = game.run(EPISODES,callbacks=[tensorboard],log_dir="logs\\"+NAME)
         score_prom += 1 / (n+ 1) * (r - score_prom)
 
         prob.append(int(game.state.isWin()))
         n+=1
 
         if i % 10 == 0:
+            with  tf.contrib.summary.create_file_writer("logs\\"+NAME,
+                                                        flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
+
+                    tf.contrib.summary.scalar("Probability",np.mean(prob))
+                    tf.contrib.summary.scalar("Mean Sore",score_prom)
 
             f = open("datos/"+nombre_archivo+".txt", "a")
             f.write(str(score_prom) + "\n")
@@ -764,8 +781,8 @@ def crear_layout():
     # lay[pos_comida[0]+1, pos_comida[1]+1]= "%"
     # lay[pos_comida[0] + 1, pos_comida[1] + 2] = "%"
     # lay[pos_comida[0] + 1, pos_comida[1] + 3] = "%"
-    lay[pos_comida[0] - 3, pos_comida[1] + 1] ="%"
-    lay[pos_comida[0] - 2, pos_comida[1] + 1] = "%"
+    # lay[pos_comida[0] - 3, pos_comida[1] + 1] ="%"
+    # lay[pos_comida[0] - 2, pos_comida[1] + 1] = "%"
     lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
     lay[pos_comida[0] + 0, pos_comida[1] + 1] = "%"
     lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
