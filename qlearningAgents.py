@@ -342,7 +342,7 @@ class Policy:
 
         return imagen.reshape((-1, 1))
 
-    def update_policy(self,callbacks=None,log_dir=""):
+    def update_policy(self,callbacks=[],log_dir=""):
         if not self.priority:
 
                 if len(self.memory) < BATCH_SIZE:
