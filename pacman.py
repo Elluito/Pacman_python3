@@ -529,8 +529,7 @@ def readCommand( argv ):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
-    parser.add_option('-d', '--dificulty', type='float', dest='dificulty',
-                      help=default('Dificulty of the test'), default=1.0)
+    parser.add_option('-d', '--difficulty', type='int', dest='difficulty',help=default('Difficulty of the enviroment'), default=0)
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
         raise Exception('Command line input not understood: ' + str(otherjunk))
@@ -582,6 +581,7 @@ def readCommand( argv ):
     args['record'] = options.record
     args['catchExceptions'] = options.catchExceptions
     args['timeout'] = options.timeout
+    args["difficulty"] =options.difficulty
 
     # Special case: recorded games don't use the runGames method or args structure
     if options.gameToReplay != None:
@@ -642,11 +642,12 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30,dificulty=1 ):
+def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30, difficulty=0):
 
     import __main__
     import numpy as np
     import time
+    # from StringIO import StringIO
     __main__.__dict__['_display'] = display
 
     rules = ClassicGameRules(timeout)
@@ -662,9 +663,19 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
          pacman.num_episodes = numGames
     score_prom = 0
     prob = []
-    NAME = "modelo_imagen_%i"% numGames+f"_{int(pacman.eps_start*10):d}_{int(pacman.eps_end*10):d}_dif{dificulty:d}_{int(time.time()):d}"
+    NAME = "modelo_imagen_%i"% numGames+f"_0{int(pacman.eps_start*10):d}_0{int(pacman.eps_end*10):d}_dif{difficulty:d}_{int(time.time()):d}_gamma{pacman.policy.gamma}"
 
     tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\"+NAME)
+    # import os
+    # os.mkdir("logs\\"+NAME)
+    # os.mkdir("logs\\"+NAME)
+    # writer = tf.contrib.summary.create_file_writer("logs\\scalars",flush_millis=1000,name=NAME)
+    writer2 = tf.summary.FileWriter("logs\\"+NAME)
+    p = None
+    prob_summary = tf.Summary()
+    prob_summary.value.add(tag='Probability', simple_value=p)
+    score_summary =  tf.Summary()
+    score_summary.value.add(tag='Mean_score', simple_value=score_prom)
 
     if numTraining==0:
         pacman.prueba = True
@@ -694,8 +705,10 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         else:
             gameDisplay = display
             rules.quiet = False
+        if layout==None:
+            pass
 
-        crear_layout()
+        crear_layout(difficulty)
         layout = Mlayout.getLayout("campo")
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
@@ -706,23 +719,18 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         n+=1
 
         if i % 10 == 0:
-            writer =tf.contrib.summary.create_file_writer("logs\\"+NAME,flush_millis=2500)
-            with  tf.name_scope("summaries"):
-                writer.set_as_default()
-                tf.contrib.summary.always_record_summaries()
 
-                tf.contrib.summary.scalar("Probability",np.mean(prob))
-                tf.contrib.summary.scalar("Mean Sore",score_prom)
+            p = np.mean(prob)
 
-            f = open("datos/"+nombre_archivo+".txt", "a")
-            f.write(str(score_prom) + "\n")
-            f.close()
-            f = open("datos/epsilon.txt", "a")
-            f.write(str(e) + "\n")
-            f.close()
-            f = open("datos/prob.txt", "a")
-            f.write(str(np.mean(prob)) + "\n")
-            f.close()
+            prob_summary.value[0].simple_value = p
+
+            writer2.add_summary(prob_summary, i)
+            score_summary.value[0].simple_value = score_prom
+            writer2.add_summary(score_summary,i)
+
+
+
+
             prob = []
             score_prom = 0
             n=0
@@ -753,7 +761,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         print('Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
 
     return games
-def crear_layout():
+def crear_layout(dificulty):
     import numpy as np
     direccion = "layouts"
     lay= np.zeros((19,19),dtype=np.object_)
@@ -776,18 +784,22 @@ def crear_layout():
     lay[pos_comida] = "."
     lay[pos_pacman] = "P"
     lay[pos_fantasma] = "G"
-    # lay[pos_comida[0]+1,pos_comida[1]-3]="%"
-    # lay[pos_comida[0]+1, pos_comida[1]-2]= "%"
-    # lay[pos_comida[0]+1, pos_comida[1]-1]= "%"
-    # lay[pos_comida[0]+1, pos_comida[1]-0]= "%"
-    # lay[pos_comida[0]+1, pos_comida[1]+1]= "%"
-    # lay[pos_comida[0] + 1, pos_comida[1] + 2] = "%"
-    # lay[pos_comida[0] + 1, pos_comida[1] + 3] = "%"
-    # lay[pos_comida[0] - 3, pos_comida[1] + 1] ="%"
-    # lay[pos_comida[0] - 2, pos_comida[1] + 1] = "%"
-    lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
-    lay[pos_comida[0] + 0, pos_comida[1] + 1] = "%"
-    lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
+    if dificulty==3:
+
+        lay[pos_comida[0]-1, pos_comida[1]-1]= "%"
+        lay[pos_comida[0]-1, pos_comida[1]-0]= "%"
+        lay[pos_comida[0]-1, pos_comida[1]+1]= "%"
+    if dificulty>=2:
+
+        lay[pos_comida[0]+1, pos_comida[1]-1]= "%"
+        lay[pos_comida[0]+1, pos_comida[1]-0]= "%"
+        lay[pos_comida[0]+1, pos_comida[1]+1]= "%"
+
+
+    if dificulty >=1:
+        lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
+        lay[pos_comida[0] + 0, pos_comida[1] + 1] = "%"
+        lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
 
 
     s = str(lay)
@@ -826,8 +838,9 @@ if __name__ == '__main__':
     
         > python pacman.py --help
         """
-        # crear_layout()
+
         args = readCommand( sys.argv[1:] ) # Get game components based on input
+        crear_layout(args["difficulty"])
         runGames( **args )
         import matplotlib.pyplot as plt
         import numpy as np
