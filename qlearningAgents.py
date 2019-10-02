@@ -387,10 +387,11 @@ class Policy:
                 # create_file_writer = tf.contrib.summary.create_file_writer
                 # w = create_file_writer(log_dir)
                 # w.close()
-                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0,callbacks=callbacks)
+                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0,callbacks=callbacks
+                                 )
                 t1 = time.time()
 
-                num = s.history["loss"]
+                num = s.history["loss"][-1]
                 # writer=tf.contrib.summary.create_file_writer(log_dir, flush_millis=2500)
                 # # writer.set_as_default()
                 #
@@ -399,7 +400,7 @@ class Policy:
                 #
                 #         for elem in num:
                 #             tf.contrib.summary.scalar("Hubert Loss",elem)
-                # print(f"Loss: {num:0.5f}")
+                print(f"Loss: {num:0.5f}")
                 # print(f"Training time: {t1-t0:0.5f} s")
                 # print("q_values: " + str(q_values[0,:]))
                 # print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
