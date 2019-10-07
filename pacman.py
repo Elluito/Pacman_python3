@@ -717,6 +717,8 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
 
         prob.append(int(game.state.isWin()))
         n+=1
+        score_summary.value[0].simple_value = score_prom
+        writer2.add_summary(score_summary, i)
 
         if i % 10 == 0:
 
@@ -725,8 +727,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
             prob_summary.value[0].simple_value = p
 
             writer2.add_summary(prob_summary, i)
-            score_summary.value[0].simple_value = score_prom
-            writer2.add_summary(score_summary,i)
+
 
 
 
@@ -784,6 +785,7 @@ def crear_layout(dificulty):
     lay[pos_comida] = "."
     lay[pos_pacman] = "P"
     lay[pos_fantasma] = "G"
+
     if dificulty==3:
 
         lay[pos_comida[0]-1, pos_comida[1]-1]= "%"
