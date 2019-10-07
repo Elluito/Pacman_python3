@@ -373,7 +373,7 @@ class PacmanRules:
             # TODO: cache numFood?
             numFood = state.getNumFood()
             if numFood == 0 and not state.data._lose:
-                state.data.scoreChange += 100
+                state.data.scoreChange += 500
                 state.data._win = True
         # Eat capsule
         if( position in state.getCapsules() ):
@@ -448,7 +448,7 @@ class GhostRules:
             state.data._eaten[agentIndex] = True
         else:
             if not state.data._win:
-                state.data.scoreChange -= 100
+                state.data.scoreChange -= 500
                 state.data._lose = True
     collide = staticmethod( collide )
 
@@ -670,17 +670,18 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
     # os.mkdir("logs\\"+NAME)
     # os.mkdir("logs\\"+NAME)
     # writer = tf.contrib.summary.create_file_writer("logs\\scalars",flush_millis=1000,name=NAME)
-    writer2 = tf.summary.FileWriter("logs\\"+NAME)
+    # writer2 = tf.summary.FileWriter("logs\\"+NAME)
     p = None
     prob_summary = tf.Summary()
     prob_summary.value.add(tag='Probability', simple_value=p)
     score_summary =  tf.Summary()
     score_summary.value.add(tag='Mean_score', simple_value=score_prom)
 
-    if numTraining==0:
-        pacman.prueba = True
-        name_prueba = input("nombre para la prueba")
+    # if numTraining==0:
+    #     pacman.prueba = True
+    #     name_prueba = input("nombre para la prueba")
     if isinstance(pacman,PacmanQAgent) and numTraining == 0:
+        name_prueba = "modelo_imagen_50000_04_01_dif1_1570255163_gamma0.9"
         pacman.policy.load_Model("models/"+name_prueba+".h5")
         pacman.policy.model.summary()
         pacman.epsilon =0
@@ -718,22 +719,21 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
         prob.append(int(game.state.isWin()))
         n+=1
 
-        if i % 10 == 0:
 
-            p = np.mean(prob)
-
-            prob_summary.value[0].simple_value = p
-
-            writer2.add_summary(prob_summary, i)
-            score_summary.value[0].simple_value = score_prom
-            writer2.add_summary(score_summary,i)
-
-
-
-
-            prob = []
-            score_prom = 0
-            n=0
+        # if i % 10 == 0:
+        #     # with tf.contrib.summary.always_record_summaries():
+        #     p = np.mean(prob)
+        #     prob_summary.value[0].simple_value = p
+        #     writer2.add_summary(prob_summary, i)
+        #     score_summary.value[0].simple_value = score_prom
+        #     writer2.add_summary(score_summary, i)
+        #     writer2.flush()
+        #     writer2.close()
+        #     writer2 = tf.summary.FileWriter("logs\\"+NAME)
+        #
+        #     prob = []
+        #     score_prom = 0
+        #     n=0
 
 
 
@@ -769,7 +769,7 @@ def crear_layout(dificulty):
     pos_comida = (10,10)
     #Posición del pacman
     x = int(np.random.randint(12,15))
-    y = int(np.random.randint(2,15))
+    y = int(np.random.randint(12,15))
     pos_pacman =(y,x)
     #Posición del fantasma
     xf = int(np.random.randint(1,3))
@@ -785,23 +785,17 @@ def crear_layout(dificulty):
     lay[pos_pacman] = "P"
     lay[pos_fantasma] = "G"
     if dificulty==3:
-
         lay[pos_comida[0]-1, pos_comida[1]-1]= "%"
         lay[pos_comida[0]-1, pos_comida[1]-0]= "%"
         lay[pos_comida[0]-1, pos_comida[1]+1]= "%"
     if dificulty>=2:
-
         lay[pos_comida[0]+1, pos_comida[1]-1]= "%"
         lay[pos_comida[0]+1, pos_comida[1]-0]= "%"
         lay[pos_comida[0]+1, pos_comida[1]+1]= "%"
-
-
     if dificulty >=1:
         lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
         lay[pos_comida[0] + 0, pos_comida[1] + 1] = "%"
         lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
-
-
     s = str(lay)
     s = s.replace("'\n", " ")
     s = s.replace("[","")
@@ -809,10 +803,6 @@ def crear_layout(dificulty):
     s = s.replace(" ","")
     s = s.replace("]","")
     s = s.replace("0"," ")
-
-
-
-
 
     open(direccion+"\campo.lay","w").close()
     f = open(direccion+"\campo.lay","w")

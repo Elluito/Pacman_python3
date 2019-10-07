@@ -34,7 +34,7 @@ SOUTH = 'South'
 EAST = 'East'
 WEST = 'West'
 STOP = 'Stop'
-EPS_START = 0.6
+EPS_START = 0.4
 EPS_END = 0.1
 EPS_DECAY = 0.999970043
 HEIGTH = 19
@@ -272,8 +272,11 @@ class Policy:
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
         self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
-        self.epsilon = 0.1
+        self.epsilon = EPS_START
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
+
+        self.loss_summary= tf.Summary()
+        self.loss_summary.value.add(tag='Hubbert Loss', simple_value=None)
         # self.global_step = tfe.Variable(0)
         # self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
@@ -295,7 +298,7 @@ class Policy:
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             if not use_prior:
-                self.model.compile(loss=tf.losses.huber_loss, optimizer=tf.train.RMSPropOptimizer(0.0002),metrics=['mae'])
+                self.model.compile(loss=tf.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01),metrics=['mae'])
 
         else:
             self.model = keras.Sequential([
@@ -342,7 +345,7 @@ class Policy:
 
         return imagen.reshape((-1, 1))
 
-    def update_policy(self,callbacks=[],log_dir=""):
+    def update_policy(self,agent,callbacks=[],log_dir=""):
         if not self.priority:
 
                 if len(self.memory) < BATCH_SIZE:
@@ -387,21 +390,19 @@ class Policy:
                 # create_file_writer = tf.contrib.summary.create_file_writer
                 # w = create_file_writer(log_dir)
                 # w.close()
-                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0,callbacks=callbacks
-                                 )
+                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0,callbacks=callbacks)
                 t1 = time.time()
 
-                num = s.history["loss"][-1]
-                # writer=tf.contrib.summary.create_file_writer(log_dir, flush_millis=2500)
+                num = s.history["loss"]
+                # writer2 = tf.summary.FileWriter(log_dir)
                 # # writer.set_as_default()
-                #
-                # with writer.set_as_default():
-                #     with tf.contrib.summary.always_record_summaries():
-                #
-                #         for elem in num:
-                #             tf.contrib.summary.scalar("Hubert Loss",elem)
-                print(f"Loss: {num:0.5f}")
-                # print(f"Training time: {t1-t0:0.5f} s")
+                # self.loss_summary.value[0].simple_value = np.mean(num)
+                # writer2.add_summary(self.loss_summary, agent.episodesSoFar)
+                # writer2.flush()
+                # writer2.close()
+                # del writer2
+                print(f"Loss: {num[-1]:0.5f}")
+                print(f"Training time: {t1-t0:0.5f} s")
                 # print("q_values: " + str(q_values[0,:]))
                 # print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
 
