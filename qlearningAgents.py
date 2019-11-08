@@ -26,6 +26,7 @@ import tensorflow.contrib.eager as tfe
 import random, util, math
 from collections import namedtuple
 
+import pickle
 import  tensorboard as tb
 from segtree import SumSegmentTree, MinSegmentTree
 from pacman import GameState
@@ -43,7 +44,30 @@ Transition = namedtuple('Transition',
 BATCH_SIZE = 32
 
 
+def dar_pedazo_de_imagenstate(state:GameState,policy):
+    pos_pacman =state.getPacmanPosition()
 
+    imagen=dar_features(policy,state)
+    lim_filas_der =imagen.shape[0]
+    lim_filas_izq = 0
+    lim_column_abajo =imagen.shape[1]
+    lim_column_arriba = 0
+
+    filas_plus = pos_pacman[0]+3 if pos_pacman[0]+2<imagen.shape[0] else lim_filas_der
+    filas_minus = pos_pacman[0]-2 if pos_pacman[0]>=2 else lim_filas_izq
+    colum_plus = pos_pacman[1]+3 if pos_pacman[1]+2<imagen.shape[1] else lim_column_abajo
+    colum_minus = pos_pacman[1]-2 if pos_pacman[1]>=2 else lim_column_arriba
+
+    pedazo = np.zeros((5,5))
+    pedazo_imagen =imagen[filas_minus:filas_plus,colum_minus:colum_plus]
+    for i in range(pedazo_imagen.shape[0]):
+        for j in range(pedazo_imagen.shape[1]):
+            pedazo[i,j]=pedazo_imagen[i,j]
+    print(pedazo)
+    pedazo = np.ravel(pedazo)
+    pedazo = np.append(pedazo,pos_pacman[0])
+    pedazo = np.append (pedazo,pos_pacman[1])
+    return pedazo
 
 def dar_features(policy,state:GameState):
     if not policy.use_image:
@@ -252,8 +276,6 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-
-
 class Policy:
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
@@ -271,6 +293,7 @@ class Policy:
         self.use_image = use_image
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
+
         self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
@@ -594,9 +617,15 @@ class QLearningAgent(ReinforcementAgent):
                                             nextState.data._win or nextState.data._lose)
         else:
             self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
+            task=2
+            filename = f"datos/piezas_task{task:d}"
+            pedazo = dar_pedazo_de_imagenstate(state,self.policy)
+            with open(filename, 'a+b') as fp:
+                pickle.dump(pedazo, fp)
+
 
         self.lastReward = reward
-        # self.policy.update_policy(self)
+
 
 
 

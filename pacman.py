@@ -549,6 +549,8 @@ def readCommand( argv ):
     if options.numTraining > 0:
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
+
+
     agentOpts['layout'] = args['layout']
     pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
@@ -670,7 +672,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
     # os.mkdir("logs\\"+NAME)
     # os.mkdir("logs\\"+NAME)
     # writer = tf.contrib.summary.create_file_writer("logs\\scalars",flush_millis=1000,name=NAME)
-    # writer2 = tf.summary.FileWriter("logs\\"+NAME)
+    writer2 = tf.summary.FileWriter("logs\\"+NAME)
     p = None
     prob_summary = tf.Summary()
     prob_summary.value.add(tag='Probability', simple_value=p)
@@ -680,11 +682,11 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
     # if numTraining==0:
     #     pacman.prueba = True
     #     name_prueba = input("nombre para la prueba")
-    if isinstance(pacman,PacmanQAgent) and numTraining == 0:
-        name_prueba = "modelo_imagen_50000_04_01_dif1_1570255163_gamma0.9"
-        pacman.policy.load_Model("models/"+name_prueba+".h5")
-        pacman.policy.model.summary()
-        pacman.epsilon =0
+    # if isinstance(pacman,PacmanQAgent) and numTraining == 0:
+    #     name_prueba = "modelo_imagen_50000_04_01_dif1_1570255163_gamma0.9"
+    #     pacman.policy.load_Model("models/"+name_prueba+".h5")
+    #     pacman.policy.model.summary()
+    #     pacman.epsilon =0
     n=0
 
     for i in range( numGames ):
@@ -710,7 +712,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
             pass
 
         crear_layout(difficulty)
-        layout = Mlayout.getLayout("campo")
+        layout = Mlayout.getLayout("campo_%i"%difficulty)
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         r,e = game.run(EPISODES,callbacks=[tensorboard],log_dir="logs\\"+NAME)
@@ -720,20 +722,20 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
         n+=1
 
 
-        # if i % 10 == 0:
-        #     # with tf.contrib.summary.always_record_summaries():
-        #     p = np.mean(prob)
-        #     prob_summary.value[0].simple_value = p
-        #     writer2.add_summary(prob_summary, i)
-        #     score_summary.value[0].simple_value = score_prom
-        #     writer2.add_summary(score_summary, i)
-        #     writer2.flush()
-        #     writer2.close()
-        #     writer2 = tf.summary.FileWriter("logs\\"+NAME)
-        #
-        #     prob = []
-        #     score_prom = 0
-        #     n=0
+        if i % 10 == 0:
+            # with tf.contrib.summary.always_record_summaries():
+            p = np.mean(prob)
+            prob_summary.value[0].simple_value = p
+            writer2.add_summary(prob_summary, i)
+            score_summary.value[0].simple_value = score_prom
+            writer2.add_summary(score_summary, i)
+            writer2.flush()
+            writer2.close()
+            writer2 = tf.summary.FileWriter("logs\\"+NAME)
+
+            prob = []
+            score_prom = 0
+            n=0
 
 
 
@@ -804,8 +806,8 @@ def crear_layout(dificulty):
     s = s.replace("]","")
     s = s.replace("0"," ")
 
-    open(direccion+"\campo.lay","w").close()
-    f = open(direccion+"\campo.lay","w")
+    open(direccion+"\campo_%i.lay"%dificulty,"w").close()
+    f = open(direccion+"\campo_%i.lay"%dificulty,"w")
     f.write(s)
     f.close()
 
