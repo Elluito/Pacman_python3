@@ -546,6 +546,7 @@ def readCommand( argv ):
     noKeyboard = options.gameToReplay == None and (options.textGraphics or options.quietGraphics)
     pacmanType = loadAgent(options.pacman, noKeyboard)
     agentOpts = parseAgentArgs(options.agentArgs)
+    agentOpts["task"] = options.difficulty
     if options.numTraining > 0:
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
@@ -618,6 +619,7 @@ def loadAgent(pacman, nographics):
             except ImportError:
 
                 # __import__(modulename[:-3])
+                print(modulename)
                 continue
             if pacman in dir(module):
                 if nographics and modulename == 'keyboardAgents.py':

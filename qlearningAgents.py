@@ -22,7 +22,7 @@ import random as rnd
 import pdb
 import tensorflow as tf
 from tensorflow import keras
-import tensorflow.contrib.eager as tfe
+
 import random, util, math
 from collections import namedtuple
 
@@ -39,6 +39,7 @@ EPS_START = 0.4
 EPS_END = 0.1
 EPS_DECAY = 0.999970043
 HEIGTH = 19
+MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 32
@@ -298,8 +299,8 @@ class Policy:
         self.epsilon = EPS_START
         self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
 
-        self.loss_summary= tf.Summary()
-        self.loss_summary.value.add(tag='Hubbert Loss', simple_value=None)
+
+
         # self.global_step = tfe.Variable(0)
         # self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
@@ -321,7 +322,7 @@ class Policy:
                 # keras.layers.Dropout(rate=0.6),
                 keras.layers.Dense(self.action_space, activation="linear")])
             if not use_prior:
-                self.model.compile(loss=tf.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01),metrics=['mae'])
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01))
 
         else:
             self.model = keras.Sequential([
@@ -336,7 +337,7 @@ class Policy:
 
         if load_name is not None: self.model = keras.models.load_model(load_name)
 
-        self.optimizer =tf.train.RMSPropOptimizer(0.01)
+        self.optimizer = keras.optimizers.RMSprop(0.01)
 
         self.device = "GPU:1"
 
@@ -508,6 +509,8 @@ class QLearningAgent(ReinforcementAgent):
         self.actions = [NORTH, WEST, SOUTH,EAST, STOP]
         # pdb.set_trace()
         self.num_episodes = 1
+        self.num_datos=0
+        self.task=args["task"]
         "*** YOUR CODE HERE ***"
 
         self.prueba =False
@@ -617,11 +620,13 @@ class QLearningAgent(ReinforcementAgent):
                                             nextState.data._win or nextState.data._lose)
         else:
             self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
-            task=2
-            filename = f"datos/piezas_task{task:d}"
-            pedazo = dar_pedazo_de_imagenstate(state,self.policy)
-            with open(filename, 'a+b') as fp:
-                pickle.dump(pedazo, fp)
+
+            if self.num_datos< MAX_GUARDAR:
+                filename = f"datos/piezas_task{self.task:d}"
+                pedazo = dar_pedazo_de_imagenstate(state,self.policy)
+                with open(filename, 'a+b') as fp:
+                    pickle.dump(pedazo, fp)
+                self.num_datos+=1
 
 
         self.lastReward = reward

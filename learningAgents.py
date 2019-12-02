@@ -167,7 +167,7 @@ class ReinforcementAgent(ValueEstimationAgent):
     def isInTesting(self):
         return not self.isInTraining()
 
-    def __init__(self,layout=None, actionFn = None, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1):
+    def __init__(self,layout=None, actionFn = None, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1,task=None):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 
@@ -186,6 +186,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
+        self.task=int(task)
 
     ################################
     # Controls needed for Crawler  #
