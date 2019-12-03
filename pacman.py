@@ -49,9 +49,12 @@ import util
 import layout as Mlayout
 import sys, types, time, random, os
 from tensorflow import keras
+
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
 ###################################################
+train_summary_writer = None
+
 
 class GameState:
     """
@@ -74,25 +77,27 @@ class GameState:
 
     # static variable keeps track of which states have had getLegalActions called
     explored = set()
+
     def getAndResetExplored():
         tmp = GameState.explored.copy()
         GameState.explored = set()
         return tmp
+
     getAndResetExplored = staticmethod(getAndResetExplored)
 
-    def getLegalActions( self, agentIndex=0 ):
+    def getLegalActions(self, agentIndex=0):
         """
         Returns the legal actions for the agent specified.
         """
-#        GameState.explored.add(self)
+        #        GameState.explored.add(self)
         if self.isWin() or self.isLose(): return []
 
         if agentIndex == 0:  # Pacman is moving
-            return PacmanRules.getLegalActions( self )
+            return PacmanRules.getLegalActions(self)
         else:
-            return GhostRules.getLegalActions( self, agentIndex )
+            return GhostRules.getLegalActions(self, agentIndex)
 
-    def generateSuccessor( self, agentIndex, action):
+    def generateSuccessor(self, agentIndex, action):
         """
         Returns the successor state after the specified agent takes the action.
         """
@@ -106,19 +111,19 @@ class GameState:
         if agentIndex == 0:  # Pacman is moving
             state.data._eaten = [False for i in range(state.getNumAgents())]
             if action not in self.getLegalPacmanActions():
-                 state.data.scoreChange-=10
-            PacmanRules.applyAction( state, action )
-        else:                # A ghost is moving
-            GhostRules.applyAction( state, action, agentIndex )
+                state.data.scoreChange -= 10
+            PacmanRules.applyAction(state, action)
+        else:  # A ghost is moving
+            GhostRules.applyAction(state, action, agentIndex)
 
         # Time passes
         if agentIndex == 0:
-            state.data.scoreChange += -TIME_PENALTY # Penalty for waiting around
+            state.data.scoreChange += -TIME_PENALTY  # Penalty for waiting around
         else:
-            GhostRules.decrementTimer( state.data.agentStates[agentIndex] )
+            GhostRules.decrementTimer(state.data.agentStates[agentIndex])
 
         # Resolve multi-agent effects
-        GhostRules.checkDeath( state, agentIndex )
+        GhostRules.checkDeath(state, agentIndex)
 
         # Book keeping
         state.data._agentMoved = agentIndex
@@ -127,16 +132,16 @@ class GameState:
         GameState.explored.add(state)
         return state
 
-    def getLegalPacmanActions( self ):
-        return self.getLegalActions( 0 )
+    def getLegalPacmanActions(self):
+        return self.getLegalActions(0)
 
-    def generatePacmanSuccessor( self, action ):
+    def generatePacmanSuccessor(self, action):
         """
         Generates the successor state after the specified pacman move
         """
-        return self.generateSuccessor( 0, action )
+        return self.generateSuccessor(0, action)
 
-    def getPacmanState( self ):
+    def getPacmanState(self):
         """
         Returns an AgentState object for pacman (in game.py)
 
@@ -145,18 +150,18 @@ class GameState:
         """
         return self.data.agentStates[0].copy()
 
-    def getPacmanPosition( self ):
+    def getPacmanPosition(self):
         return self.data.agentStates[0].getPosition()
 
-    def getGhostStates( self ):
+    def getGhostStates(self):
         return self.data.agentStates[1:]
 
-    def getGhostState( self, agentIndex ):
+    def getGhostState(self, agentIndex):
         if agentIndex == 0 or agentIndex >= self.getNumAgents():
             raise Exception("Invalid index passed to getGhostState")
         return self.data.agentStates[agentIndex]
 
-    def getGhostPosition( self, agentIndex ):
+    def getGhostPosition(self, agentIndex):
         if agentIndex == 0:
             raise Exception("Pacman's index passed to getGhostPosition")
         return self.data.agentStates[agentIndex].getPosition()
@@ -164,10 +169,10 @@ class GameState:
     def getGhostPositions(self):
         return [s.getPosition() for s in self.getGhostStates()]
 
-    def getNumAgents( self ):
-        return len( self.data.agentStates )
+    def getNumAgents(self):
+        return len(self.data.agentStates)
 
-    def getScore( self ):
+    def getScore(self):
         return float(self.data.score)
 
     def getCapsules(self):
@@ -176,7 +181,7 @@ class GameState:
         """
         return self.data.capsules
 
-    def getNumFood( self ):
+    def getNumFood(self):
         return self.data.food.count()
 
     def getFood(self):
@@ -209,10 +214,10 @@ class GameState:
     def hasWall(self, x, y):
         return self.data.layout.walls[x][y]
 
-    def isLose( self ):
+    def isLose(self):
         return self.data._lose
 
-    def isWin( self ):
+    def isWin(self):
         return self.data._win
 
     #############################################
@@ -220,41 +225,42 @@ class GameState:
     # You shouldn't need to call these directly #
     #############################################
 
-    def __init__( self, prevState = None ):
+    def __init__(self, prevState=None):
         """
         Generates a new state by copying information from its predecessor.
         """
-        if prevState != None: # Initial state
+        if prevState != None:  # Initial state
             self.data = GameStateData(prevState.data)
         else:
             self.data = GameStateData()
 
-    def deepCopy( self ):
-        state = GameState( self )
+    def deepCopy(self):
+        state = GameState(self)
         state.data = self.data.deepCopy()
         return state
 
-    def __eq__( self, other ):
+    def __eq__(self, other):
         """
         Allows two states to be compared.
         """
         return hasattr(other, 'data') and self.data == other.data
 
-    def __hash__( self ):
+    def __hash__(self):
         """
         Allows states to be keys of dictionaries.
         """
-        return hash( self.data )
+        return hash(self.data)
 
-    def __str__( self ):
+    def __str__(self):
 
         return str(self.data)
 
-    def initialize( self, layout, numGhostAgents=1000 ):
+    def initialize(self, layout, numGhostAgents=1000):
         """
         Creates an initial game state from a layout array (see layout.py).
         """
         self.data.initialize(layout, numGhostAgents)
+
 
 ############################################################################
 #                     THE HIDDEN SECRETS OF PACMAN                         #
@@ -262,22 +268,24 @@ class GameState:
 # You shouldn't need to look through the code in this section of the file. #
 ############################################################################
 
-SCARED_TIME = 40    # Moves ghosts are scared
-COLLISION_TOLERANCE = 0.7 # How close ghosts must be to Pacman to kill
-TIME_PENALTY = 1 # Number of points lost each round
+SCARED_TIME = 40  # Moves ghosts are scared
+COLLISION_TOLERANCE = 0.7  # How close ghosts must be to Pacman to kill
+TIME_PENALTY = 1  # Number of points lost each round
+
 
 class ClassicGameRules:
     """
     These game rules manage the control flow of a game, deciding when
     and how the game starts and ends.
     """
+
     def __init__(self, timeout=30):
         self.timeout = timeout
 
-    def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False):
+    def newGame(self, layout, pacmanAgent, ghostAgents, display, quiet=False, catchExceptions=False):
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
-        initState.initialize( layout, len(ghostAgents) )
+        initState.initialize(layout, len(ghostAgents))
         game = Game(agents, display, self, catchExceptions=catchExceptions)
         game.state = initState
         self.initialState = initState.deepCopy()
@@ -291,11 +299,11 @@ class ClassicGameRules:
         if state.isWin(): self.win(state, game)
         if state.isLose(): self.lose(state, game)
 
-    def win( self, state, game ):
+    def win(self, state, game):
         if not self.quiet: print("Pacman emerges victorious! Score: %d" % state.data.score)
         game.gameOver = True
 
-    def lose( self, state, game ):
+    def lose(self, state, game):
         if not self.quiet: print("Pacman died! Score: %d" % state.data.score)
         game.gameOver = True
 
@@ -323,25 +331,27 @@ class ClassicGameRules:
     def getMaxTimeWarnings(self, agentIndex):
         return 0
 
+
 class PacmanRules:
     """
     These functions govern how pacman interacts with his environment under
     the classic game rules.
     """
-    PACMAN_SPEED=1
+    PACMAN_SPEED = 1
 
-    def getLegalActions( state ):
+    def getLegalActions(state):
         """
         Returns a list of possible actions.
         """
-        return Actions.getPossibleActions( state.getPacmanState().configuration, state.data.layout.walls )
-    getLegalActions = staticmethod( getLegalActions )
+        return Actions.getPossibleActions(state.getPacmanState().configuration, state.data.layout.walls)
 
-    def applyAction( state, action ):
+    getLegalActions = staticmethod(getLegalActions)
+
+    def applyAction(state, action):
         """
         Edits the state to reflect the results of the action.
         """
-        legal = PacmanRules.getLegalActions( state )
+        legal = PacmanRules.getLegalActions(state)
         if action not in legal:
             # s = "Illegal action " + str(action)
             # # print(s)
@@ -351,19 +361,20 @@ class PacmanRules:
         pacmanState = state.data.agentStates[0]
 
         # Update Configuration
-        vector = Actions.directionToVector( action, PacmanRules.PACMAN_SPEED )
-        pacmanState.configuration = pacmanState.configuration.generateSuccessor( vector )
+        vector = Actions.directionToVector(action, PacmanRules.PACMAN_SPEED)
+        pacmanState.configuration = pacmanState.configuration.generateSuccessor(vector)
 
         # Eat
         next = pacmanState.configuration.getPosition()
-        nearest = nearestPoint( next )
-        if manhattanDistance( nearest, next ) <= 0.5 :
+        nearest = nearestPoint(next)
+        if manhattanDistance(nearest, next) <= 0.5:
             # Remove food
-            PacmanRules.consume( nearest, state )
-    applyAction = staticmethod( applyAction )
+            PacmanRules.consume(nearest, state)
 
-    def consume( position, state ):
-        x,y = position
+    applyAction = staticmethod(applyAction)
+
+    def consume(position, state):
+        x, y = position
         # Eat food
         if state.data.food[x][y]:
             state.data.scoreChange += 10
@@ -376,70 +387,77 @@ class PacmanRules:
                 state.data.scoreChange += 500
                 state.data._win = True
         # Eat capsule
-        if( position in state.getCapsules() ):
-            state.data.capsules.remove( position )
+        if (position in state.getCapsules()):
+            state.data.capsules.remove(position)
             state.data._capsuleEaten = position
             # Reset all ghosts' scared timers
-            for index in range( 1, len( state.data.agentStates ) ):
+            for index in range(1, len(state.data.agentStates)):
                 state.data.agentStates[index].scaredTimer = SCARED_TIME
-    consume = staticmethod( consume )
+
+    consume = staticmethod(consume)
+
 
 class GhostRules:
     """
     These functions dictate how ghosts interact with their environment.
     """
-    GHOST_SPEED=1.0
-    def getLegalActions( state, ghostIndex ):
+    GHOST_SPEED = 1.0
+
+    def getLegalActions(state, ghostIndex):
         """
         Ghosts cannot stop, and cannot turn around unless they
         reach a dead end, but can turn 90 degrees at intersections.
         """
-        conf = state.getGhostState( ghostIndex ).configuration
-        possibleActions = Actions.getPossibleActions( conf, state.data.layout.walls )
-        reverse = Actions.reverseDirection( conf.direction )
+        conf = state.getGhostState(ghostIndex).configuration
+        possibleActions = Actions.getPossibleActions(conf, state.data.layout.walls)
+        reverse = Actions.reverseDirection(conf.direction)
         if Directions.STOP in possibleActions:
-            possibleActions.remove( Directions.STOP )
-        if reverse in possibleActions and len( possibleActions ) > 1:
-            possibleActions.remove( reverse )
+            possibleActions.remove(Directions.STOP)
+        if reverse in possibleActions and len(possibleActions) > 1:
+            possibleActions.remove(reverse)
         return possibleActions
-    getLegalActions = staticmethod( getLegalActions )
 
-    def applyAction( state, action, ghostIndex):
+    getLegalActions = staticmethod(getLegalActions)
 
-        legal = GhostRules.getLegalActions( state, ghostIndex )
+    def applyAction(state, action, ghostIndex):
+
+        legal = GhostRules.getLegalActions(state, ghostIndex)
         if action not in legal:
             raise Exception("Illegal ghost action " + str(action))
 
         ghostState = state.data.agentStates[ghostIndex]
         speed = GhostRules.GHOST_SPEED
         if ghostState.scaredTimer > 0: speed /= 2.0
-        vector = Actions.directionToVector( action, speed )
-        ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
-    applyAction = staticmethod( applyAction )
+        vector = Actions.directionToVector(action, speed)
+        ghostState.configuration = ghostState.configuration.generateSuccessor(vector)
 
-    def decrementTimer( ghostState):
+    applyAction = staticmethod(applyAction)
+
+    def decrementTimer(ghostState):
         timer = ghostState.scaredTimer
         if timer == 1:
-            ghostState.configuration.pos = nearestPoint( ghostState.configuration.pos )
-        ghostState.scaredTimer = max( 0, timer - 1 )
-    decrementTimer = staticmethod( decrementTimer )
+            ghostState.configuration.pos = nearestPoint(ghostState.configuration.pos)
+        ghostState.scaredTimer = max(0, timer - 1)
 
-    def checkDeath( state, agentIndex):
+    decrementTimer = staticmethod(decrementTimer)
+
+    def checkDeath(state, agentIndex):
         pacmanPosition = state.getPacmanPosition()
-        if agentIndex == 0: # Pacman just moved; Anyone can kill him
-            for index in range( 1, len( state.data.agentStates ) ):
+        if agentIndex == 0:  # Pacman just moved; Anyone can kill him
+            for index in range(1, len(state.data.agentStates)):
                 ghostState = state.data.agentStates[index]
                 ghostPosition = ghostState.configuration.getPosition()
-                if GhostRules.canKill( pacmanPosition, ghostPosition ):
-                    GhostRules.collide( state, ghostState, index )
+                if GhostRules.canKill(pacmanPosition, ghostPosition):
+                    GhostRules.collide(state, ghostState, index)
         else:
             ghostState = state.data.agentStates[agentIndex]
             ghostPosition = ghostState.configuration.getPosition()
-            if GhostRules.canKill( pacmanPosition, ghostPosition ):
-                GhostRules.collide( state, ghostState, agentIndex )
-    checkDeath = staticmethod( checkDeath )
+            if GhostRules.canKill(pacmanPosition, ghostPosition):
+                GhostRules.collide(state, ghostState, agentIndex)
 
-    def collide( state, ghostState, agentIndex):
+    checkDeath = staticmethod(checkDeath)
+
+    def collide(state, ghostState, agentIndex):
         if ghostState.scaredTimer > 0:
             state.data.scoreChange += 200
             GhostRules.placeGhost(state, ghostState)
@@ -450,15 +468,19 @@ class GhostRules:
             if not state.data._win:
                 state.data.scoreChange -= 500
                 state.data._lose = True
-    collide = staticmethod( collide )
 
-    def canKill( pacmanPosition, ghostPosition ):
-        return manhattanDistance( ghostPosition, pacmanPosition ) <= COLLISION_TOLERANCE
-    canKill = staticmethod( canKill )
+    collide = staticmethod(collide)
+
+    def canKill(pacmanPosition, ghostPosition):
+        return manhattanDistance(ghostPosition, pacmanPosition) <= COLLISION_TOLERANCE
+
+    canKill = staticmethod(canKill)
 
     def placeGhost(state, ghostState):
         ghostState.configuration = ghostState.start
-    placeGhost = staticmethod( placeGhost )
+
+    placeGhost = staticmethod(placeGhost)
+
 
 #############################
 # FRAMEWORK TO START A GAME #
@@ -466,6 +488,7 @@ class GhostRules:
 
 def default(str):
     return str + ' [Default: %default]'
+
 
 def parseAgentArgs(str):
     if str == None: return {}
@@ -475,11 +498,12 @@ def parseAgentArgs(str):
         if '=' in p:
             key, val = p.split('=')
         else:
-            key,val = p, 1
+            key, val = p, 1
         opts[key] = val
     return opts
 
-def readCommand( argv ):
+
+def readCommand(argv):
     """
     Processes the command used to run pacman from the command line.
     """
@@ -508,7 +532,7 @@ def readCommand( argv ):
                       help='Generate minimal output and no graphics', default=False)
     parser.add_option('-g', '--ghosts', dest='ghost',
                       help=default('the ghost agent TYPE in the ghostAgents module to use'),
-                      metavar = 'TYPE', default='RandomGhost')
+                      metavar='TYPE', default='RandomGhost')
     parser.add_option('-k', '--numghosts', type='int', dest='numGhosts',
                       help=default('The maximum number of ghosts to use'), default=4)
     parser.add_option('-z', '--zoom', type='float', dest='zoom',
@@ -519,7 +543,7 @@ def readCommand( argv ):
                       help='Writes game histories to a file (named by the time they were played)', default=False)
     parser.add_option('--replay', dest='gameToReplay',
                       help='A recorded game file (pickle) to replay', default=None)
-    parser.add_option('-a','--agentArgs',dest='agentArgs',
+    parser.add_option('-a', '--agentArgs', dest='agentArgs',
                       help='Comma separated values sent to agent. e.g. "opt1=val1,opt2,opt3=val3"')
     parser.add_option('-x', '--numTraining', dest='numTraining', type='int',
                       help=default('How many episodes are training (suppresses output)'), default=0)
@@ -529,7 +553,13 @@ def readCommand( argv ):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
-    parser.add_option('-d', '--difficulty', type='int', dest='difficulty',help=default('Difficulty of the enviroment'), default=0)
+    parser.add_option('-d', '--difficulty', type='int', dest='difficulty', help=default('Difficulty of the enviroment'),
+                      default=0)
+    parser.add_option('--inicio', type='int', dest='inicio', help=default('Inicio numero de experimentos '),
+                      default=1)
+    parser.add_option('--final', type='int', dest='final', help=default('Final numero de experimentos '),
+                      default=2)
+
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
         raise Exception('Command line input not understood: ' + str(otherjunk))
@@ -539,7 +569,7 @@ def readCommand( argv ):
     if options.fixRandomSeed: random.seed('cs188')
 
     # Choose a layout
-    args['layout'] = Mlayout.getLayout(options.layout )
+    args['layout'] = Mlayout.getLayout(options.layout)
     if args['layout'] == None: raise Exception("The layout " + options.layout + " cannot be found")
 
     # Choose a Pacman agent
@@ -551,9 +581,8 @@ def readCommand( argv ):
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
 
-
     agentOpts['layout'] = args['layout']
-    pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
+    pacman = pacmanType(**agentOpts)  # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
 
     # Don't display training games
@@ -563,7 +592,7 @@ def readCommand( argv ):
 
     # Choose a ghost agent
     ghostType = loadAgent(options.ghost, noKeyboard)
-    args['ghosts'] = [ghostType( i+1 ) for i in range( options.numGhosts )]
+    args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
 
     # Choose a display format
     if options.quietGraphics:
@@ -578,26 +607,30 @@ def readCommand( argv ):
 
         ##### aquí es cuando pinta las cosas que debe pintar
 
-
-        args['display'] = graphicsDisplay.PacmanGraphics(options.zoom, frameTime = options.frameTime)
+        args['display'] = graphicsDisplay.PacmanGraphics(options.zoom, frameTime=options.frameTime)
     args['numGames'] = options.numGames
     args['record'] = options.record
     args['catchExceptions'] = options.catchExceptions
     args['timeout'] = options.timeout
-    args["difficulty"] =options.difficulty
+    args["difficulty"] = options.difficulty
+    args["inicio"] = options.inicio
+    args["final"] = options.final
 
     # Special case: recorded games don't use the runGames method or args structure
     if options.gameToReplay != None:
         print('Replaying recorded game %s.' % options.gameToReplay)
         import cPickle
         f = open(options.gameToReplay)
-        try: recorded = cPickle.load(f)
-        finally: f.close()
+        try:
+            recorded = cPickle.load(f)
+        finally:
+            f.close()
         recorded['display'] = args['display']
         replayGame(**recorded)
         sys.exit(0)
 
     return args
+
 
 def loadAgent(pacman, nographics):
     # Looks through all pythonPath Directories for the right module,
@@ -628,26 +661,28 @@ def loadAgent(pacman, nographics):
     print(pacman)
     raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
 
-def replayGame( layout, actions, display ):
+
+def replayGame(layout, actions, display):
     import pacmanAgents, ghostAgents
     rules = ClassicGameRules()
-    agents = [pacmanAgents.GreedyAgent()] + [ghostAgents.RandomGhost(i+1) for i in range(layout.getNumGhosts())]
-    game = rules.newGame( layout, agents[0], agents[1:], display )
+    agents = [pacmanAgents.GreedyAgent()] + [ghostAgents.RandomGhost(i + 1) for i in range(layout.getNumGhosts())]
+    game = rules.newGame(layout, agents[0], agents[1:], display)
     state = game.state
     display.initialize(state.data)
 
     for action in actions:
-            # Execute the action
-        state = state.generateSuccessor( *action )
+        # Execute the action
+        state = state.generateSuccessor(*action)
         # Change the display
-        display.update( state.data )
+        display.update(state.data)
         # Allow for game specific conditions (winning, losing, etc.)
         rules.process(state, game)
 
     display.finish()
 
-def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30, difficulty=0):
 
+def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,final, numTraining=0, catchExceptions=False,
+             timeout=30, difficulty=0):
     import __main__
     import numpy as np
     import time
@@ -658,28 +693,28 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
     games = []
 
     # nombre_archivo =input("Nombre archivo\n")
-    nombre_archivo= "score"
-    open("datos/"+nombre_archivo+".txt", "w").close()
-    open("datos/epsilon.txt", "w").close()
-    open("datos/prob.txt", "w").close()
+    nombre_archivo = "score"
+    open("datos/" + nombre_archivo + ".txt", "w").close()
+    open(f"datos/epsilon.txt", "w").close()
+    open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "w").close()
     from qlearningAgents import PacmanQAgent
-    if isinstance(pacman,PacmanQAgent):
-         pacman.num_episodes = numGames
+    if isinstance(pacman, PacmanQAgent):
+        pacman.num_episodes = numGames
     score_prom = 0
     prob = []
-    NAME = "modelo_imagen_%i"% numGames+f"_0{int(pacman.eps_start*10):d}_0{int(pacman.eps_end*10):d}_dif{difficulty:d}_{int(time.time()):d}_gamma{pacman.policy.gamma}"
+    NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif{difficulty:d}_{int(time.time()):d}_gamma{pacman.policy.gamma}"
+    # global train_summary_writer
+    # if train_summary_writer is None:
+    #     train_summary_writer = tf.summary.create_file_writer("logs\\" + NAME)
+    # tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\" + NAME
+    tensorboard =None
 
-    tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\"+NAME)
-    # import os
-    # os.mkdir("logs\\"+NAME)
-    # os.mkdir("logs\\"+NAME)
-    # writer = tf.contrib.summary.create_file_writer("logs\\scalars",flush_millis=1000,name=NAME)
-    writer2 = tf.summary.FileWriter("logs\\"+NAME)
-    p = None
-    prob_summary = tf.Summary()
-    prob_summary.value.add(tag='Probability', simple_value=p)
-    score_summary =  tf.Summary()
-    score_summary.value.add(tag='Mean_score', simple_value=score_prom)
+    # writer2 = tf.summary.FileWriter("logs\\"+NAME)
+    # p = None
+    # prob_summary = tf.Summary()
+    # prob_summary.value.add(tag='Probability', simple_value=p)
+    # score_summary =  tf.Summary()
+    # score_summary.value.add(tag='Mean_score', simple_value=score_prom)
 
     # if numTraining==0:
     #     pacman.prueba = True
@@ -689,130 +724,132 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining = 0,
     #     pacman.policy.load_Model("models/"+name_prueba+".h5")
     #     pacman.policy.model.summary()
     #     pacman.epsilon =0
-    n=0
+    n = 0
 
-    for i in range( numGames ):
-        if i%100==0 and not pacman.prueba:
+    for i in range(numGames):
+        if i % 100 == 0 and not pacman.prueba:
             if isinstance(pacman, PacmanQAgent):
                 pacman.policy.saveModel(NAME)
-        if i >numTraining and isinstance(pacman, PacmanQAgent):
-            pacman.prueba =True
+        if i > numTraining and isinstance(pacman, PacmanQAgent):
+            pacman.prueba = True
         beQuiet = i < numTraining
-
-
 
         EPISODES = i
         if beQuiet:
-                # Suppress output and graphics
+            # Suppress output and graphics
             import textDisplay
             gameDisplay = textDisplay.NullGraphics()
             rules.quiet = True
         else:
             gameDisplay = display
             rules.quiet = False
-        if layout==None:
+        if layout == None:
             pass
 
         crear_layout(difficulty)
-        layout = Mlayout.getLayout("campo_%i"%difficulty)
-        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
+        layout = Mlayout.getLayout("campo_%i" % difficulty)
+        game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
-        r,e = game.run(EPISODES,callbacks=[tensorboard],log_dir="logs\\"+NAME)
-        score_prom += 1 / (n+ 1) * (r - score_prom)
+        r, e = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)
+        score_prom += 1 / (n + 1) * (r - score_prom)
 
         prob.append(int(game.state.isWin()))
-        n+=1
-
+        n += 1
 
         if i % 10 == 0:
             # with tf.contrib.summary.always_record_summaries():
             p = np.mean(prob)
-            prob_summary.value[0].simple_value = p
-            writer2.add_summary(prob_summary, i)
-            score_summary.value[0].simple_value = score_prom
-            writer2.add_summary(score_summary, i)
-            writer2.flush()
-            writer2.close()
-            writer2 = tf.summary.FileWriter("logs\\"+NAME)
+            # prob_summary.value[0].simple_value = p
+            # writer2.add_summary(prob_summary, i)
+            # score_summary.value[0].simple_value = score_prom
+            # writer2.add_summary(score_summary, i)
+            # writer2.flush()
+            # writer2.close()
+            # writer2 = tf.summary.FileWriter("logs\\"+NAME)
+            # with  tf.contrib.summary.create_file_writer("logs\\" + NAME,
+            #                                             flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
+            #     tf.contrib.summary.scalar("Probability", np.mean(prob))
+            #     tf.contrib.summary.scalar("Mean Sore", score_prom)
+
+            # with train_summary_writer.as_default():
+            #     tf.summary.scalar('Probability', p, step=EPISODES)
+            #     tf.summary.scalar('Score', score_prom, step=EPISODES)
+            with open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "a") as f:
+                f.write(str(p)+"\n")
 
             prob = []
             score_prom = 0
-            n=0
-
-
+            n = 0
 
         if not beQuiet: games.append(game)
 
         if record:
             import time, cPickle
-            fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
+            fname = ('recorded-game-%d' % (i + 1)) + '-'.join([str(t) for t in time.localtime()[1:6]])
             f = file(fname, 'w')
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
 
-
-
-
-    if (numGames-numTraining) > 0:
-
+    if (numGames - numTraining) > 0:
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
-        winRate = wins.count(True)/ float(len(wins))
+        winRate = wins.count(True) / float(len(wins))
         print('Average Score:', sum(scores) / float(len(scores)))
         print('Scores:       ', ', '.join([str(score) for score in scores]))
         print('Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate))
-        print('Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
+        print('Record:       ', ', '.join([['Loss', 'Win'][int(w)] for w in wins]))
 
     return games
+
+
 def crear_layout(dificulty):
     import numpy as np
     direccion = "layouts"
-    lay= np.zeros((19,19),dtype=np.object_)
-    #La posición de la comida
-    pos_comida = (10,10)
-    #Posición del pacman
-    x = int(np.random.randint(12,15))
-    y = int(np.random.randint(12,15))
-    pos_pacman =(y,x)
-    #Posición del fantasma
-    xf = int(np.random.randint(1,3))
-    yf = int(np.random.randint(1,5))
-    pos_fantasma = (yf,xf)
+    lay = np.zeros((19, 19), dtype=np.object_)
+    # La posición de la comida
+    pos_comida = (10, 10)
+    # Posición del pacman
+    x = int(np.random.randint(12, 15))
+    y = int(np.random.randint(12, 15))
+    pos_pacman = (y, x)
+    # Posición del fantasma
+    xf = int(np.random.randint(1, 3))
+    yf = int(np.random.randint(1, 5))
+    pos_fantasma = (yf, xf)
 
-    #Construyo las paredes
-    lay[0,:] = "%"
-    lay[:,0] = "%"
-    lay[:,-1] = "%"
-    lay[-1,:] = "%"
+    # Construyo las paredes
+    lay[0, :] = "%"
+    lay[:, 0] = "%"
+    lay[:, -1] = "%"
+    lay[-1, :] = "%"
     lay[pos_comida] = "."
     lay[pos_pacman] = "P"
     lay[pos_fantasma] = "G"
-    if dificulty==3:
-        lay[pos_comida[0]-1, pos_comida[1]-1]= "%"
-        lay[pos_comida[0]-1, pos_comida[1]-0]= "%"
-        lay[pos_comida[0]-1, pos_comida[1]+1]= "%"
-    if dificulty>=2:
-        lay[pos_comida[0]+1, pos_comida[1]-1]= "%"
-        lay[pos_comida[0]+1, pos_comida[1]-0]= "%"
-        lay[pos_comida[0]+1, pos_comida[1]+1]= "%"
-    if dificulty >=1:
+    if dificulty == 3:
+        lay[pos_comida[0] - 1, pos_comida[1] - 1] = "%"
+        lay[pos_comida[0] - 1, pos_comida[1] - 0] = "%"
+        lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
+    if dificulty >= 2:
+        lay[pos_comida[0] + 1, pos_comida[1] - 1] = "%"
+        lay[pos_comida[0] + 1, pos_comida[1] - 0] = "%"
+        lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
+    if dificulty >= 1:
         lay[pos_comida[0] - 1, pos_comida[1] + 1] = "%"
         lay[pos_comida[0] + 0, pos_comida[1] + 1] = "%"
         lay[pos_comida[0] + 1, pos_comida[1] + 1] = "%"
     s = str(lay)
     s = s.replace("'\n", " ")
-    s = s.replace("[","")
-    s = s.replace("'","")
-    s = s.replace(" ","")
-    s = s.replace("]","")
-    s = s.replace("0"," ")
+    s = s.replace("[", "")
+    s = s.replace("'", "")
+    s = s.replace(" ", "")
+    s = s.replace("]", "")
+    s = s.replace("0", " ")
 
-    open(direccion+"\campo_%i.lay"%dificulty,"w").close()
-    f = open(direccion+"\campo_%i.lay"%dificulty,"w")
+    open(direccion + "\campo_%i.lay" % dificulty, "w").close()
+    f = open(direccion + "\campo_%i.lay" % dificulty, "w")
     f.write(s)
     f.close()
-
 
 
 def moving_average(a, n=3):
@@ -822,57 +859,62 @@ def moving_average(a, n=3):
 
 
 if __name__ == '__main__':
-        """
-        The main function called when pacman.py is run
-        from the command line:
-    
-        > python pacman.py
-    
-        See the usage string for more details.
-    
-        > python pacman.py --help
-        """
+    """
+    The main function called when pacman.py is run
+    from the command line:
 
-        args = readCommand( sys.argv[1:] ) # Get game components based on input
-        crear_layout(args["difficulty"])
-        runGames( **args )
-        import matplotlib.pyplot as plt
-        import numpy as np
-        # nombre_archivo = input("Nombre archivo otra ves\n")
-        nombre_archivo = "score"
-        y = np.loadtxt("datos/"+nombre_archivo+".txt")
-        y = moving_average(y,50)
-        x = np.linspace(0,args["numGames"],len(y))
-        plt.plot(x,y)
-        plt.xlabel("Episodios")
-        plt.ylabel("Recompensa ")
-        # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "score_mandar_%i_imagen"%args["numTraining"]
-        plt.savefig("datos/"+nombre_fig+".png")
+    > python pacman.py
 
-        plt.figure()
-        ###### pinto la probabilidad de ganar
-        nombre_archivo = "prob"
-        y = np.loadtxt("datos/" + nombre_archivo + ".txt")
-        y = moving_average(y, 50)
-        x = np.linspace(0, args["numGames"], len(y))
-        plt.plot(x, y)
-        plt.xlabel("Episodios transcurridos")
-        plt.ylabel("Probabilidad de ganar")
-        # nombre_fig = input("Nombre figura\n")
-        nombre_fig = "prob_%i_imagen"%args["numTraining"]
-        plt.savefig("datos/" + nombre_fig + ".png")
+    See the usage string for more details.
 
-        plt.figure()
-        fig, ax = plt.subplots()
-        x = np.loadtxt("datos/epsilon.txt")
-        x = moving_average(x,50)
-        ax.plot(x, y)
-        ax.set_xlim(max(x),x[-2])
-        plt.xlabel("Epsilon")
-        plt.ylabel("Probabilidad de ganar")
-        # nombre_fig = input("Nombre figura epsilon\n")
-        nombre_fig = "epsilon_mandar_%i_imagen"%args["numTraining"]
-        plt.savefig("datos/" + nombre_fig + ".png")
+    > python pacman.py --help
+    """
 
-        pass
+    args = readCommand(sys.argv[1:])  # Get game components based on input
+    crear_layout(args["difficulty"])
+
+    for i in range(args["inicio"],args["final"]):
+        args["attemp"] = i
+        runGames(**args)
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # # nombre_archivo = input("Nombre archivo otra ves\n")
+    # nombre_archivo = "score"
+    # y = np.loadtxt("datos/"+nombre_archivo+".txt")
+    # y = moving_average(y,50)
+    # x = np.linspace(0,args["numGames"],len(y))
+    # plt.plot(x,y)
+    # plt.xlabel("Episodios")
+    # plt.ylabel("Recompensa ")
+    # # nombre_fig = input("Nombre figura\n")
+    # nombre_fig = "score_mandar_%i_imagen"%args["numTraining"]
+    # plt.savefig("datos/"+nombre_fig+".png")
+    #
+    # plt.figure()
+    # ###### pinto la probabilidad de ganar
+    # nombre_archivo = "prob"
+    # y = np.loadtxt("datos/" + nombre_archivo + ".txt")
+    # y = moving_average(y, 50)
+    # x = np.linspace(0, args["numGames"], len(y))
+    # plt.plot(x, y)
+    # plt.xlabel("Episodios transcurridos")
+    # plt.ylabel("Probabilidad de ganar")
+    # # nombre_fig = input("Nombre figura\n")
+    # nombre_fig = "prob_%i_imagen"%args["numTraining"]
+    # plt.savefig("datos/" + nombre_fig + ".png")
+    #
+    # plt.figure()
+    # fig, ax = plt.subplots()
+    # x = np.loadtxt("datos/epsilon.txt")
+    # x = moving_average(x,50)
+    # ax.plot(x, y)
+    # ax.set_xlim(max(x),x[-2])
+    # plt.xlabel("Epsilon")
+    # plt.ylabel("Probabilidad de ganar")
+    # # nombre_fig = input("Nombre figura epsilon\n")
+    # nombre_fig = "epsilon_mandar_%i_imagen"%args["numTraining"]
+    # plt.savefig("datos/" + nombre_fig + ".png")
+
+    pass

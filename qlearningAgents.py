@@ -64,7 +64,7 @@ def dar_pedazo_de_imagenstate(state:GameState,policy):
     for i in range(pedazo_imagen.shape[0]):
         for j in range(pedazo_imagen.shape[1]):
             pedazo[i,j]=pedazo_imagen[i,j]
-    print(pedazo)
+
     pedazo = np.ravel(pedazo)
     pedazo = np.append(pedazo,pos_pacman[0])
     pedazo = np.append (pedazo,pos_pacman[1])
@@ -411,10 +411,8 @@ class Policy:
                 # dev=[device.name for device in devices if device.device_type == 'GPU']
                 # with tf.device(dev[0]):
 
-                # create_file_writer = tf.contrib.summary.create_file_writer
-                # w = create_file_writer(log_dir)
-                # w.close()
-                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0,callbacks=callbacks)
+
+                s=self.model.fit(state_batch, q_values, batch_size=len(q_values),epochs=20,verbose=0)
                 t1 = time.time()
 
                 num = s.history["loss"]
@@ -621,12 +619,12 @@ class QLearningAgent(ReinforcementAgent):
         else:
             self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
 
-            if self.num_datos< MAX_GUARDAR:
-                filename = f"datos/piezas_task{self.task:d}"
-                pedazo = dar_pedazo_de_imagenstate(state,self.policy)
-                with open(filename, 'a+b') as fp:
-                    pickle.dump(pedazo, fp)
-                self.num_datos+=1
+            # if self.num_datos< MAX_GUARDAR:
+            #     filename = f"datos/piezas_task_{self.task:d}"
+            #     pedazo = dar_pedazo_de_imagenstate(state,self.policy)
+            #     with open(filename, 'a+b') as fp:
+            #         pickle.dump(pedazo, fp)
+            #     self.num_datos+=1
 
 
         self.lastReward = reward
