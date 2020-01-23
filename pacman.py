@@ -11,6 +11,7 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 import tensorflow as tf
+print(tf.__version__)
 
 """
 Pacman.py holds the logic for the classic pacman game along with the main
@@ -49,6 +50,19 @@ import util
 import layout as Mlayout
 import sys, types, time, random, os
 from tensorflow import keras
+global gpus
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print(gpus)
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
 
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
@@ -555,10 +569,13 @@ def readCommand(argv):
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
     parser.add_option('-d', '--difficulty', type='int', dest='difficulty', help=default('Difficulty of the enviroment'),
                       default=0)
-    parser.add_option('--inicio', type='int', dest='inicio', help=default('Inicio numero de experimentos '),
+    parser.add_option('--inicio', type='int', dest='inicio', help=default('Inicio numero de experimentos'),
                       default=1)
-    parser.add_option('--final', type='int', dest='final', help=default('Final numero de experimentos '),
+    parser.add_option('--final', type='int', dest='final', help=default('Final numero de experimentos'),
                       default=2)
+    parser.add_option('--transfer', dest='trans', help=default('String con el par de tareas que se palnea trasnferir'),
+                      default="0,1")
+
 
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
@@ -582,6 +599,9 @@ def readCommand(argv):
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
 
     agentOpts['layout'] = args['layout']
+
+    lista = options.trans.split(",")
+    agentOpts["transfer"] = [int(i) for i in lista]
     pacman = pacmanType(**agentOpts)  # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
 
@@ -592,6 +612,7 @@ def readCommand(argv):
 
     # Choose a ghost agent
     ghostType = loadAgent(options.ghost, noKeyboard)
+    assert "," in options.trans or options, "Las tareas no estan separadas por una coma"
     args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
 
     # Choose a display format
@@ -614,7 +635,11 @@ def readCommand(argv):
     args['timeout'] = options.timeout
     args["difficulty"] = options.difficulty
     args["inicio"] = options.inicio
+
     args["final"] = options.final
+
+
+
 
     # Special case: recorded games don't use the runGames method or args structure
     if options.gameToReplay != None:
@@ -694,21 +719,24 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
 
     # nombre_archivo =input("Nombre archivo\n")
     nombre_archivo = "score"
-    open("datos/" + nombre_archivo + ".txt", "w").close()
-    open(f"datos/epsilon.txt", "w").close()
-    open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "w").close()
+    # open("datos/" + nombre_archivo + ".txt", "w").close()
+    # open(f"datos/epsilon.txt", "w").close()
+    # open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "w").close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
         pacman.num_episodes = numGames
     score_prom = 0
     prob = []
-    NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif{difficulty:d}_{int(time.time()):d}_gamma{pacman.policy.gamma}"
+    NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif{difficulty:d}_{int(time.time()):d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}"
     # global train_summary_writer
     # if train_summary_writer is None:
     #     train_summary_writer = tf.summary.create_file_writer("logs\\" + NAME)
     # tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\" + NAME
     tensorboard =None
-
+    # name_prueba = "modelo_imagen_20000_04_01_dif1_1576522619_attemp_1_gamma0.9"
+    # pacman.policy.load_Model("models/"+name_prueba+".h5")
+    # pacman.epsilon =0.1
+    n = 0
     # writer2 = tf.summary.FileWriter("logs\\"+NAME)
     # p = None
     # prob_summary = tf.Summary()
@@ -716,23 +744,31 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
     # score_summary =  tf.Summary()
     # score_summary.value.add(tag='Mean_score', simple_value=score_prom)
 
-    # if numTraining==0:
-    #     pacman.prueba = True
-    #     name_prueba = input("nombre para la prueba")
-    # if isinstance(pacman,PacmanQAgent) and numTraining == 0:
-    #     name_prueba = "modelo_imagen_50000_04_01_dif1_1570255163_gamma0.9"
-    #     pacman.policy.load_Model("models/"+name_prueba+".h5")
-    #     pacman.policy.model.summary()
-    #     pacman.epsilon =0
+    if numTraining==0:
+        pacman.prueba = True
+        pacman.epsilon = 0.1
+
+    if isinstance(pacman,PacmanQAgent) and numTraining == 0:
+        name =None
+        if difficulty == 0:
+            name = "modelo_imagen_20000_04_01_dif0_1575607728_gamma_0.9_attemp_8"
+        if difficulty == 1:
+            name = "modelo_imagen_25000_04_01_dif1_1576737275_attemp_3_gamma0.9"
+        if difficulty == 2:
+            name = "modelo_imagen_25000_04_01_dif2_1577007228_attemp_2_gamma0.9"
+        pacman.policy.load_Model("models/"+name+".h5")
+        pacman.epsilon =0
     n = 0
 
     for i in range(numGames):
-        if i % 100 == 0 and not pacman.prueba:
-            if isinstance(pacman, PacmanQAgent):
-                pacman.policy.saveModel(NAME)
+        t0= time.time()
         if i > numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba = True
-        beQuiet = i < numTraining
+        # if i % 100 == 0 and not pacman.prueba:
+        #     if isinstance(pacman, PacmanQAgent):
+        #         pacman.policy.saveModel(NAME  )
+
+        beQuiet = i > numTraining
 
         EPISODES = i
         if beQuiet:
@@ -745,7 +781,8 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
             rules.quiet = False
         if layout == None:
             pass
-
+        # if i==990:
+        #     input("pausa")
         crear_layout(difficulty)
         layout = Mlayout.getLayout("campo_%i" % difficulty)
         game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
@@ -756,30 +793,34 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         prob.append(int(game.state.isWin()))
         n += 1
 
-        if i % 10 == 0:
-            # with tf.contrib.summary.always_record_summaries():
-            p = np.mean(prob)
-            # prob_summary.value[0].simple_value = p
-            # writer2.add_summary(prob_summary, i)
-            # score_summary.value[0].simple_value = score_prom
-            # writer2.add_summary(score_summary, i)
-            # writer2.flush()
-            # writer2.close()
-            # writer2 = tf.summary.FileWriter("logs\\"+NAME)
-            # with  tf.contrib.summary.create_file_writer("logs\\" + NAME,
-            #                                             flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
-            #     tf.contrib.summary.scalar("Probability", np.mean(prob))
-            #     tf.contrib.summary.scalar("Mean Sore", score_prom)
-
-            # with train_summary_writer.as_default():
-            #     tf.summary.scalar('Probability', p, step=EPISODES)
-            #     tf.summary.scalar('Score', score_prom, step=EPISODES)
+        if i % 10 == 0 and  not pacman.prueba:
+        #     # with tf.contrib.summary.always_record_summaries():
+        #     p = np.mean(prob)
+        #     # prob_summary.value[0].simple_value = p
+        #     # writer2.add_summary(prob_summary, i)
+        #     # score_summary.value[0].simple_value = score_prom
+        #     # writer2.add_summary(score_summary, i)
+        #     # writer2.flush()
+        #     # writer2.close()
+        #     # writer2 = tf.summary.FileWriter("logs\\"+NAME)
+        #     # with  tf.contrib.summary.create_file_writer("logs\\" + NAME,
+        #     #                                             flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
+        #     #     tf.contrib.summary.scalar("Probability", np.mean(prob))
+        #     #     tf.contrib.summary.scalar("Mean Sore", score_prom)
+        #
+        #     # with train_summary_writer.as_default():
+        #     #     tf.summary.scalar('Probability', p, step=EPISODES)
+        #     #     tf.summary.scalar('Score', score_prom, step=EPISODES)
+        #
             with open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "a") as f:
                 f.write(str(p)+"\n")
-
+                                                # f= open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "a")
+                                                # f.write(str(p) + "\n")
+                                                # f.close()
             prob = []
             score_prom = 0
             n = 0
+
 
         if not beQuiet: games.append(game)
 
@@ -790,8 +831,11 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
-
-    if (numGames - numTraining) > 0:
+        t1 = time.time()
+        # print(f"Training time: {t1 - t0:0.5f} s")
+        if pacman.BREAK:
+            break
+    if (numGames -  numTraining) > 0:
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True) / float(len(wins))
@@ -870,14 +914,20 @@ if __name__ == '__main__':
     > python pacman.py --help
     """
 
-    args = readCommand(sys.argv[1:])  # Get game components based on input
-    crear_layout(args["difficulty"])
+      # Get game components based on input
 
-    for i in range(args["inicio"],args["final"]):
+    args = readCommand(sys.argv[1:])
+    crear_layout(args["difficulty"])
+    t0 = time.time()
+    ini = args["inicio"]
+    fin = args["final"]+1
+    for i in range(ini,fin):
+        args = readCommand(sys.argv[1:])
         args["attemp"] = i
         runGames(**args)
+    tn= time.time()
+    print(f"Tiempo total trasncurrido {(tn-t0)/(60*60):0.3f} h")
 
-    import matplotlib.pyplot as plt
     import numpy as np
 
     # # nombre_archivo = input("Nombre archivo otra ves\n")
@@ -891,30 +941,6 @@ if __name__ == '__main__':
     # # nombre_fig = input("Nombre figura\n")
     # nombre_fig = "score_mandar_%i_imagen"%args["numTraining"]
     # plt.savefig("datos/"+nombre_fig+".png")
-    #
-    # plt.figure()
-    # ###### pinto la probabilidad de ganar
-    # nombre_archivo = "prob"
-    # y = np.loadtxt("datos/" + nombre_archivo + ".txt")
-    # y = moving_average(y, 50)
-    # x = np.linspace(0, args["numGames"], len(y))
-    # plt.plot(x, y)
-    # plt.xlabel("Episodios transcurridos")
-    # plt.ylabel("Probabilidad de ganar")
-    # # nombre_fig = input("Nombre figura\n")
-    # nombre_fig = "prob_%i_imagen"%args["numTraining"]
-    # plt.savefig("datos/" + nombre_fig + ".png")
-    #
-    # plt.figure()
-    # fig, ax = plt.subplots()
-    # x = np.loadtxt("datos/epsilon.txt")
-    # x = moving_average(x,50)
-    # ax.plot(x, y)
-    # ax.set_xlim(max(x),x[-2])
-    # plt.xlabel("Epsilon")
-    # plt.ylabel("Probabilidad de ganar")
-    # # nombre_fig = input("Nombre figura epsilon\n")
-    # nombre_fig = "epsilon_mandar_%i_imagen"%args["numTraining"]
-    # plt.savefig("datos/" + nombre_fig + ".png")
+
 
     pass
