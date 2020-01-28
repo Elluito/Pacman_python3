@@ -750,7 +750,7 @@ class Game:
                     self.mute(agentIndex)
                     agent.final( self.state )
                     if not agent.prueba:
-                        agent.policy.update_policy(agent,callbacks,log_dir=log_dir)
+                        agent.policy_second.update_policy(agent,callbacks,log_dir=log_dir)
                     self.unmute()
                 except Exception:
                     if not self.catchExceptions: raise

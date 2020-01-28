@@ -721,7 +721,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
     nombre_archivo = "score"
     # open("datos/" + nombre_archivo + ".txt", "w").close()
     # open(f"datos/epsilon.txt", "w").close()
-    # open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "w").close()
+    open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "w").close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
         pacman.num_episodes = numGames
@@ -768,7 +768,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         #     if isinstance(pacman, PacmanQAgent):
         #         pacman.policy.saveModel(NAME  )
 
-        beQuiet = i > numTraining
+        beQuiet = i < numTraining
 
         EPISODES = i
         if beQuiet:
@@ -812,11 +812,10 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         #     #     tf.summary.scalar('Probability', p, step=EPISODES)
         #     #     tf.summary.scalar('Score', score_prom, step=EPISODES)
         #
-            with open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "a") as f:
+            p = np.mean(prob)
+            with open(f"datos/prob_task_{pacman.task}_attempt_{attemp}_transfer_from_{pacman.n1}.txt", "a") as f:
                 f.write(str(p)+"\n")
-                                                # f= open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "a")
-                                                # f.write(str(p) + "\n")
-                                                # f.close()
+
             prob = []
             score_prom = 0
             n = 0
