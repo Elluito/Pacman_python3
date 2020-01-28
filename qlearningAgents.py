@@ -376,6 +376,7 @@ class Policy:
     def update_policy(self,agent,callbacks=[],log_dir=""):
         if not self.priority:
             # print(gpus)
+
             with tf.device("GPU:0"):
 
                 if len(self.memory) < BATCH_SIZE:
@@ -413,24 +414,11 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = self.model.predict_on_batch([state_batch])
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                # devices = device_lib.list_local_devices()
-                # dev=[device.name for device in devices if device.device_type == 'GPU']
-                # with tf.device(dev[0]):
+
                 s=None
                 for _ in range(20):
                     self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
 
-                # writer2 = tf.summary.FileWriter(log_dir)
-                # # writer.set_as_default()
-                # self.loss_summary.value[0].simple_value = np.mean(num)
-                # writer2.add_summary(self.loss_summary, agent.episodesSoFar)
-                # writer2.flush()
-                # writer2.close()
-                # del writer2
-
-                # print(f"Training time: {t1-t0:0.5f} s")
-                # print("q_values: " + str(q_values[0,:]))
-                # print("Prediction: " + str(self.model.predict([state_batch])[0,:]))
 
 
 
@@ -518,10 +506,12 @@ class QLearningAgent(ReinforcementAgent):
         self.memory_length = 4
         self.prueba =False
 
+
         layout = args["layout"]
         width = layout.width
         height = layout.height
         self.BREAK=False
+        self.phi=0.8
 
         self.num_trans = 0
         self.lastReward= 0
@@ -534,6 +524,9 @@ class QLearningAgent(ReinforcementAgent):
             self.policy_second = Policy(width, height, 5,use_image=True,use_prior=False)
             num_first = args["transfer"][0]
             num_second = args ["transfer"][1]
+
+            self.n1 = num_first
+            self.n2 = num_second
             if num_first == 0:
                 name = "modelo_imagen_20000_04_01_dif0_1575607728_gamma_0.9_attemp_8"
             if num_first == 1:
@@ -549,7 +542,7 @@ class QLearningAgent(ReinforcementAgent):
 
 
         else:
-            self.policy = Policy(width, height, 5, use_image=True, use_prior=False)
+            self.policy_second = Policy(width, height, 5, use_image=True, use_prior=False)
 
 
     def getQValue(self, state, action):
@@ -608,41 +601,50 @@ class QLearningAgent(ReinforcementAgent):
 
             Q_actual = self.policy_second.model.predict(np.array(features).reshape(1,-1))
 
-        Q_pasado = self.policy_first.model.predict(features.reshape(shape))
+
+        accion = None
 
         assert len(self.memory) <= self.memory_length, f"La memoria tiene más de {self.memory_length:d} elementos"
         pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
         self.memory.append(pedazo)
         if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
-            #         guardar = []
-            #         for elem in self.memory:
-            #             if len(guardar)==0:
-            #                  guardar=elem
-            #             else:
-            #                  guardar = np.append(guardar,elem)
-            #         filename = f"datos/piezas_task_{self.task:d}"
-            #         with open(filename, 'a+b') as fp:
-            #             pickle.dump(guardar, fp)
-            #         self.num_datos += 1
-            #         print(self.num_datos)
+            if self.num_datos < MAX_GUARDAR:
+                guardar = []
+                for elem in self.memory:
+                    if len(guardar) == 0:
+                        guardar = elem
+                    else:
+                        guardar = np.append(guardar, elem)
+                filename = f"datos/piezas_task_{self.task:d}"
+                with open(filename, 'a+b') as fp:
+                    pickle.dump(guardar, fp)
+                self.num_datos += 1
+                print(self.num_datos)
+                self.memory.pop(0)
+            if self.num_datos >= MAX_GUARDAR:
+                self.BREAK = True
+
+
+            situacion = np.array(self.memory)
+            situacion = situacion.reshape(1,-1)
+            if self.similarity_function is not None:
+                if self.similarity_function.predict(situacion)==1:
+                    Q_pasado = self.policy_first.model.predict(features.reshape(shape))
+                    Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
+                    accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
+                        range(len(self.actions)))
+
+
+
+
             self.memory.pop(0)
-
-
-            if self.similarity_function.predict(self.memory)==1:
-
-                Q_combinado = ((Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
-                accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
-                    range(len(self.actions)))
-                print("transferí")
-
-            else:
-                accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
-                    range(len(self.actions)))
         else:
+                accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
+
+
+        if accion is None:
             accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
                 range(len(self.actions)))
-
-
 
 
 
@@ -654,26 +656,13 @@ class QLearningAgent(ReinforcementAgent):
                 a =(EPS_END-EPS_START)/self.num_episodes
                 eps_threshold = EPS_START + a * (self.episodesSoFar)
                 self.epsilon = eps_threshold
+                self.phi = self.phi*EPS_DECAY
                 self.n +=1
         #
-        # assert len(self.memory)<=self.memory_length,f"La memoria tiene más de {self.memory_length:d} elementos"
+        assert len(self.memory)<=self.memory_length,f"La memoria tiene más de {self.memory_length:d} elementos"
         # pedazo = dar_pedazo_de_imagenstate(state, self.policy)
         # self.memory.append(pedazo)
-        # if len(self.memory)==self.memory_length :#and self.num_datos < MAX_GUARDAR:
-        # #         guardar = []
-        # #         for elem in self.memory:
-        # #             if len(guardar)==0:
-        # #                  guardar=elem
-        # #             else:
-        # #                  guardar = np.append(guardar,elem)
-        # #         filename = f"datos/piezas_task_{self.task:d}"
-        # #         with open(filename, 'a+b') as fp:
-        # #             pickle.dump(guardar, fp)
-        # #         self.num_datos += 1
-        # #         print(self.num_datos)
-        #         self.memory.pop(0)
-        # if self.num_datos >= MAX_GUARDAR:
-        #         self.BREAK = True
+
 
         return action
 
@@ -687,21 +676,21 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        if self.policy.priority:
-            self.policy.priority_memory.add(dar_features(self.policy, state), self.actions.index(action), reward,
-                                            dar_features(self.policy, nextState),
+        if self.policy_second.priority:
+            self.policy_second.priority_memory.add(dar_features(self.policy_second, state), self.actions.index(action), reward,
+                                            dar_features(self.policy_second, nextState),
                                             nextState.data._win or nextState.data._lose)
         else:
-            self.policy.memory.push(dar_features( self.policy,state), self.actions.index(action), nextState, reward)
+            self.policy_second.memory.push(dar_features( self.policy_second,state), self.actions.index(action), nextState, reward)
 
-            # if self.num_datos< MAX_GUARDAR:
-            #     filename = f"datos/piezas_task_{self.task:d}"
-            #     pedazo = dar_pedazo_de_imagenstate(state,self.policy)
-            #     with open(filename, 'a+b') as fp:
-            #         pickle.dump(pedazo, fp)
-            #     self.num_datos+=1
-            # else:
-            #     self.BREAK=True
+            if self.num_datos< MAX_GUARDAR and self.prueba:
+                filename = f"datos/piezas_task_{self.task:d}"
+                pedazo = dar_pedazo_de_imagenstate(state,self.policy_second)
+                with open(filename, 'a+b') as fp:
+                    pickle.dump(pedazo, fp)
+                self.num_datos+=1
+            elif self.prueba and self.num_datos> MAX_GUARDAR :
+                self.BREAK=True
 
 
         self.lastReward = reward
