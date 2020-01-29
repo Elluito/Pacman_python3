@@ -683,14 +683,7 @@ class QLearningAgent(ReinforcementAgent):
         else:
             self.policy_second.memory.push(dar_features( self.policy_second,state), self.actions.index(action), nextState, reward)
 
-            if self.num_datos< MAX_GUARDAR and self.prueba:
-                filename = f"datos/piezas_task_{self.task:d}"
-                pedazo = dar_pedazo_de_imagenstate(state,self.policy_second)
-                with open(filename, 'a+b') as fp:
-                    pickle.dump(pedazo, fp)
-                self.num_datos+=1
-            elif self.prueba and self.num_datos> MAX_GUARDAR :
-                self.BREAK=True
+
 
 
         self.lastReward = reward
