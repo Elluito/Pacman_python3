@@ -717,20 +717,24 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
     rules = ClassicGameRules(timeout)
     games = []
 
-    # nombre_archivo =input("Nombre archivo\n")
-    nombre_archivo = "score"
-    # open("datos/" + nombre_archivo + ".txt", "w").close()
-    # open(f"datos/epsilon.txt", "w").close()
-    open(f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt", "w").close()
+    # N2 es el numero de la tarea  actual sobre la cual hago la trasnferencia. Si es diferente de 0 significa que hicimos
+    # trasnfer de lo contrario solo estamos corriendo un experimento sencillo
+    if pacman.n2 != 0:
+        nombre_archivo = f"datos/prob_task_{pacman.task}_attempt_{attemp}_transfer_from_{pacman.n1}_t.txt"
+        NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif_{difficulty:d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}_transfer_from_{pacman.n1}"
+
+    else:
+        NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif_{difficulty:d}_{int(time.time()):d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}"
+        nombre_archivo = f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt"
+    open(nombre_archivo, "w").close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
         pacman.num_episodes = numGames
     score_prom = 0
     prob = []
-    NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif{difficulty:d}_{int(time.time()):d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}"
-    # global train_summary_writer
-    # if train_summary_writer is None:
-    #     train_summary_writer = tf.summary.create_file_writer("logs\\" + NAME)
+
+
+
     # tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\" + NAME
     tensorboard =None
     # name_prueba = "modelo_imagen_20000_04_01_dif1_1576522619_attemp_1_gamma0.9"
@@ -752,18 +756,18 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         if difficulty == 2:
             name = "modelo_imagen_25000_04_01_dif2_1577007228_attemp_2_gamma0.9"
         pacman.policy_second.load_Model("models/"+name+".h5")
-        pacman.epsilon =0
+        pacman.epsilon = 0
     n = 0
 
     for i in range(numGames):
 
         if i > numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba = True
-        # if i % 100 == 0 and not pacman.prueba:
-        #     if isinstance(pacman, PacmanQAgent):
-        #         pacman.policy_second.saveModel(NAME  )
+        if i % 100 == 0 and not pacman.prueba:
+            if isinstance(pacman, PacmanQAgent):
+                pacman.policy_second.saveModel(NAME  )
 
-        beQuiet = i >= numTraining
+        beQuiet = i <= numTraining
 
         EPISODES = i
         if beQuiet:
@@ -807,7 +811,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         #     #     tf.summary.scalar('Score', score_prom, step=EPISODES)
         #
             p = np.mean(prob)
-            with open(f"datos/prob_task_{pacman.task}_attempt_{attemp}_transfer_from_{pacman.n1}.txt", "a") as f:
+            with open(nombre_archivo, "a") as f:
                 f.write(str(p)+"\n")
 
             prob = []

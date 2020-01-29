@@ -337,7 +337,7 @@ class Policy:
             self.model.compile(loss=lambda y_t,y_pred: self.func(y_pred=y_pred,y_true=y_t),optimizer=tf.train.RMSPropOptimizer(0.01))
             if not use_prior:
                 self.model.compile(loss="mse",optimizer=tf.train.RMSPropOptimizer(0.01))
-        print("compile")
+
 
         if load_name is not None: self.model = keras.models.load_model(load_name)
 
@@ -608,7 +608,7 @@ class QLearningAgent(ReinforcementAgent):
         pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
         self.memory.append(pedazo)
         if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
-            if self.num_datos < MAX_GUARDAR:
+            if self.num_datos < MAX_GUARDAR and self.prueba :
                 guardar = []
                 for elem in self.memory:
                     if len(guardar) == 0:
@@ -619,8 +619,8 @@ class QLearningAgent(ReinforcementAgent):
                 with open(filename, 'a+b') as fp:
                     pickle.dump(guardar, fp)
                 self.num_datos += 1
-                print(self.num_datos)
-                self.memory.pop(0)
+
+
             if self.num_datos >= MAX_GUARDAR:
                 self.BREAK = True
 
@@ -658,10 +658,7 @@ class QLearningAgent(ReinforcementAgent):
                 self.epsilon = eps_threshold
                 self.phi = self.phi*EPS_DECAY
                 self.n +=1
-        #
-        assert len(self.memory)<=self.memory_length,f"La memoria tiene más de {self.memory_length:d} elementos"
-        # pedazo = dar_pedazo_de_imagenstate(state, self.policy)
-        # self.memory.append(pedazo)
+
 
 
         return action

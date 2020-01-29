@@ -95,7 +95,7 @@ def readCommand(argv):
 
 
 def graficar_todos_juntos(max_number):
-    names= ["Tarea_0","Tarea_1","Tarea_2","Tarea_3"]
+    names= ["T0-T1","Tarea_1"]
     all_datos = []
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
@@ -110,7 +110,7 @@ def graficar_todos_juntos(max_number):
                 datos = np.column_stack((datos, nuevo))
         prom = np.mean(datos, axis=1)
         all_datos.append(prom)
-    print(all_datos)
+    # print(all_datos)
     for i,prom in enumerate(all_datos):
         x = np.linspace(0, len(prom) * 10, len(prom))
         plt.plot(x, prom,label=names[i])
@@ -175,4 +175,4 @@ def graficar_uno():
 
 if __name__ == '__main__':
 
-    graficar_todos_juntos(2)
+    graficar_todos_juntos(1)
