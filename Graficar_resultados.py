@@ -1,8 +1,19 @@
 import numpy as np
+from  scipy.signal import savgol_filter
 import os
 import sys
 import glob
 import matplotlib.pyplot as plt
+
+def smooth(scalars, weight):  # Weight between 0 and 1
+    last = scalars[0]  # First value in the plot (first timestep)
+    smoothed = list()
+    for point in scalars:
+        smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
+        smoothed.append(smoothed_val)                        # Save it
+        last = smoothed_val                                  # Anchor the last smoothed value
+
+    return smoothed
 
 
 def default(str):
@@ -25,13 +36,6 @@ def readCommand(argv):
 
     parser.add_option('-c', '--carpeta', dest='file', type='str',
                       help=default("Where file is located"), default=os.path.dirname(os.path.abspath(__file__))+"/Tarea_0")
-    # parser.add_option('-l', '--layout', dest='layout',
-    #                   help=default('the LAYOUT_FILE from which to load the map layout'),
-    #                   metavar='LAYOUT_FILE', default='mediumClassic')
-    # parser.add_option('-p', '--pacman', dest='pacman',
-    #                   help=default('the agent TYPE in the pacmanAgents module to use'),
-    #                   metavar='TYPE', default='KeyboardAgent')
-
 
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
@@ -39,63 +43,12 @@ def readCommand(argv):
     args = dict()
     args["file"]=options.file
 
-    # if args['layout'] == None: raise Exception("The layout " + options.layout + " cannot be found")
-
-    # Choose a Pacman agent
-    # noKeyboard = options.gameToReplay == None and (options.textGraphics or options.quietGraphics)
-    #
-    # if options.numTraining > 0:
-    #     args['numTraining'] = options.numTraining
-
-    #
-    #
-    # args['pacman'] = pacman
-    #
-    #
-    # # Choose a ghost agent
-    #
-    # args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
-
-    # Choose a display format
-    # if options.quietGraphics:
-    #     import textDisplay
-    #     args['display'] = textDisplay.NullGraphics()
-    # elif options.textGraphics:
-    #     import textDisplay
-    #     textDisplay.SLEEP_TIME = options.frameTime
-    #     args['display'] = textDisplay.PacmanGraphics()
-    # else:
-    #     import graphicsDisplay
-
-        ##### aquí es cuando pinta las cosas que debe pintar
-
-    #     args['display'] = graphicsDisplay.PacmanGraphics(options.zoom, frameTime=options.frameTime)
-    # args['numGames'] = options.numGames
-    # args['record'] = options.record
-    # args['catchExceptions'] = options.catchExceptions
-    # args['timeout'] = options.timeout
-    # args["difficulty"] = options.difficulty
-    # args["inicio"] = options.inicio
-    # args["final"] = options.final
-    #
-    # # Special case: recorded games don't use the runGames method or args structure
-    # if options.gameToReplay != None:
-    #     print('Replaying recorded game %s.' % options.gameToReplay)
-    #     import cPickle
-    #     f = open(options.gameToReplay)
-    #     try:
-    #         recorded = cPickle.load(f)
-    #     finally:
-    #         f.close()
-    #     recorded['display'] = args['display']
-    #     replayGame(**recorded)
-    #     sys.exit(0)
 
     return args
 
 
 def graficar_todos_juntos(max_number):
-    names= ["T0-T1","Tarea_1"]
+    names= ["Tarea_2","T1-T2 AUTOENCODER_1"]
     all_datos = []
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
@@ -113,7 +66,7 @@ def graficar_todos_juntos(max_number):
     # print(all_datos)
     for i,prom in enumerate(all_datos):
         x = np.linspace(0, len(prom) * 10, len(prom))
-        plt.plot(x, prom,label=names[i])
+        plt.plot(x,  smooth(prom,0.999),label=names[i])
     plt.xlabel("Episodios transcurridos")
     plt.ylabel("Probabilidad  de ganar")
     plt.legend()

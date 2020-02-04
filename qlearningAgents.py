@@ -48,6 +48,20 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 32
 
+def flatten(X):
+    '''
+    Flatten a 3D array.
+
+    Input
+    X            A 3D array for lstm, where the array is sample x timesteps x features.
+
+    Output
+    flattened_X  A 2D array, sample x features.
+    '''
+    flattened_X = np.empty((X.shape[0], X.shape[2]))  # sample x features array.
+    for i in range(X.shape[0]):
+        flattened_X[i] = X[i, (X.shape[1] - 1), :]
+    return (flattened_X)
 
 def dar_pedazo_de_imagenstate(state:GameState,policy):
     pos_pacman =state.getPacmanPosition()
@@ -535,8 +549,9 @@ class QLearningAgent(ReinforcementAgent):
             #     name = "modelo_imagen_25000_04_01_dif2_1577007228_attemp_2_gamma0.9"
             self.policy_first.load_Model("models/" + name + ".h5")
 
-            f = open(f"datos/SMV_class_{num_first}_{num_second}","r+b")
-            self.similarity_function = pickle.load(f)
+            f = open(f"datos/"+args["sim_function"],"r+b")
+            # self.similarity_function = pickle.load(f)
+            self.similarity_function = keras.models.load_model("datos/"+args["sim_function"])
             f.close()
 
 
@@ -625,10 +640,13 @@ class QLearningAgent(ReinforcementAgent):
                 self.BREAK = True
 
 
-            situacion = np.array(self.memory)
-            situacion = situacion.reshape(1,-1)
+            situacion = np.array(self.memory).reshape(1,4,27)
+            # situacion = situacion.reshape(1,-1)
             if self.similarity_function is not None:
-                if self.similarity_function.predict(situacion)==1:
+                pred =  self.similarity_function.predict(situacion)
+                mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
+
+                if mse <= 0.02:
                     Q_pasado = self.policy_first.model.predict(features.reshape(shape))
                     Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
                     accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(

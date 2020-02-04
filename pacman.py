@@ -575,6 +575,8 @@ def readCommand(argv):
                       default=2)
     parser.add_option('--transfer', dest='trans', help=default('String con el par de tareas que se palnea trasnferir'),
                       default="")
+    parser.add_option("-s",'--similarity' ,dest='similarity', help=default('String con el par de tareas que se palnea trasnferir'),
+                      default="")
 
 
     options, otherjunk = parser.parse_args(argv)
@@ -602,6 +604,12 @@ def readCommand(argv):
     if options.trans is not "":
         lista = options.trans.split(",")
         agentOpts["transfer"] = [int(i) for i in lista]
+        if options.similarity is not "":
+
+            agentOpts["sim_function"]  = options.similarity
+        else:
+           raise Exception("Se debe especificar una ruta de archivo a la función de similaridad cunado se pasa le parñametro \"transfer\"")
+
     pacman = pacmanType(**agentOpts)  # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
 
@@ -720,7 +728,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
     # N2 es el numero de la tarea  actual sobre la cual hago la trasnferencia. Si es diferente de 0 significa que hicimos
     # trasnfer de lo contrario solo estamos corriendo un experimento sencillo
     if pacman.n2 != 0:
-        nombre_archivo = f"datos/prob_task_{pacman.task}_attempt_{attemp}_transfer_from_{pacman.n1}_t.txt"
+        nombre_archivo = f"datos/prob_task_{pacman.task}_attempt_{attemp}_transfer_from_{pacman.n1}.txt"
         NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif_{difficulty:d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}_transfer_from_{pacman.n1}"
 
     else:
