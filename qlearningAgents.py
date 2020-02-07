@@ -296,6 +296,7 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 class Policy:
+    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space')
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
@@ -313,9 +314,9 @@ class Policy:
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
 
-        self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
+        # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
-        self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
+        # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
 
 
 
@@ -355,9 +356,9 @@ class Policy:
 
         if load_name is not None: self.model = keras.models.load_model(load_name)
 
-        self.optimizer = keras.optimizers.RMSprop(0.01)
 
-        self.device = "GPU:1"
+
+
 
 
         # Episode policy and reward history
@@ -395,7 +396,7 @@ class Policy:
 
                 if len(self.memory) < BATCH_SIZE:
                             return
-                t0=time.time()
+
                 transitions = self.memory.sample(BATCH_SIZE)
                 # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
                 # detailed explanation). This converts batch-array of Transitions
@@ -418,9 +419,6 @@ class Policy:
                 non_final_mask = np.nonzero(non_final_mask)[0]
                 non_final_next_states = [s for s in batch.next_state
                                          if not s.data._lose and not s.data._win]
-
-
-
                 next_state_values = np.zeros([BATCH_SIZE],dtype =float)
                 non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
                 non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
@@ -428,14 +426,8 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = self.model.predict_on_batch([state_batch])
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-
-                s=None
                 for _ in range(20):
                     self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
-
-
-
-
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
@@ -484,7 +476,7 @@ class Policy:
 
 
 
-        # cosa = salidas.history["loss"]
+
 
 class QLearningAgent(ReinforcementAgent):
     """
@@ -651,10 +643,6 @@ class QLearningAgent(ReinforcementAgent):
                     Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
                     accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
                         range(len(self.actions)))
-
-
-
-
             self.memory.pop(0)
         else:
                 accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))

@@ -92,6 +92,7 @@ class ValueEstimationAgent(Agent):
         util.raiseNotDefined()
 
 class ReinforcementAgent(ValueEstimationAgent):
+    __slots__ = ('actionFn', 'numTraining', 'epsilon', 'alpha', 'gamma', 'task')
     """
       Abstract Reinforcemnt Agent: A ValueEstimationAgent
             which estimates Q-Values (as well as policies) from experience
@@ -105,6 +106,28 @@ class ReinforcementAgent(ValueEstimationAgent):
         - Use self.getLegalActions(state) to know which actions
                       are available in a state
     """
+
+    def __init__(self,layout=None,transfer=None,sim_function =None ,actionFn = None, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1,task=None):
+        """
+        actionFn: Function which takes a state and returns the list of legal actions
+
+        alpha    - learning rate
+        epsilon  - exploration rate
+        gamma    - discount factor
+        numTraining - number of training episodes, i.e. no learning after these many episodes
+        """
+        if actionFn == None:
+            actionFn = lambda state: state.getLegalActions()
+        self.actionFn = actionFn
+        self.episodesSoFar = 0
+        self.accumTrainRewards = 0.0
+        self.accumTestRewards = 0.0
+        self.numTraining = int(numTraining)
+        self.epsilon = float(epsilon)
+        self.alpha = float(alpha)
+        self.discount = float(gamma)
+        self.task=int(task)
+
     ####################################
     #    Override These Functions      #
     ####################################
@@ -167,26 +190,7 @@ class ReinforcementAgent(ValueEstimationAgent):
     def isInTesting(self):
         return not self.isInTraining()
 
-    def __init__(self,layout=None,transfer=None,sim_function =None ,actionFn = None, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1,task=None):
-        """
-        actionFn: Function which takes a state and returns the list of legal actions
 
-        alpha    - learning rate
-        epsilon  - exploration rate
-        gamma    - discount factor
-        numTraining - number of training episodes, i.e. no learning after these many episodes
-        """
-        if actionFn == None:
-            actionFn = lambda state: state.getLegalActions()
-        self.actionFn = actionFn
-        self.episodesSoFar = 0
-        self.accumTrainRewards = 0.0
-        self.accumTestRewards = 0.0
-        self.numTraining = int(numTraining)
-        self.epsilon = float(epsilon)
-        self.alpha = float(alpha)
-        self.discount = float(gamma)
-        self.task=int(task)
 
     ################################
     # Controls needed for Crawler  #

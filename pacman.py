@@ -11,6 +11,7 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 import tensorflow as tf
+
 print(tf.__version__)
 
 """
@@ -50,6 +51,8 @@ import util
 import layout as Mlayout
 import sys, types, time, random, os
 from tensorflow import keras
+
+
 global gpus
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print(gpus)
@@ -575,9 +578,9 @@ def readCommand(argv):
                       default=2)
     parser.add_option('--transfer', dest='trans', help=default('String con el par de tareas que se palnea trasnferir'),
                       default="")
-    parser.add_option("-s",'--similarity' ,dest='similarity', help=default('String con el par de tareas que se palnea trasnferir'),
+    parser.add_option("-s", '--similarity', dest='similarity',
+                      help=default('String con el par de tareas que se palnea trasnferir'),
                       default="")
-
 
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
@@ -606,9 +609,10 @@ def readCommand(argv):
         agentOpts["transfer"] = [int(i) for i in lista]
         if options.similarity is not "":
 
-            agentOpts["sim_function"]  = options.similarity
+            agentOpts["sim_function"] = options.similarity
         else:
-           raise Exception("Se debe especificar una ruta de archivo a la función de similaridad cunado se pasa le parñametro \"transfer\"")
+            raise Exception(
+                "Se debe especificar una ruta de archivo a la función de similaridad cunado se pasa le parñametro \"transfer\"")
 
     pacman = pacmanType(**agentOpts)  # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
@@ -645,9 +649,6 @@ def readCommand(argv):
     args["inicio"] = options.inicio
 
     args["final"] = options.final
-
-
-
 
     # Special case: recorded games don't use the runGames method or args structure
     if options.gameToReplay != None:
@@ -714,12 +715,17 @@ def replayGame(layout, actions, display):
     display.finish()
 
 
-def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,final, numTraining=0, catchExceptions=False,
+def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, final, numTraining=0,
+             catchExceptions=False,
              timeout=30, difficulty=0):
     import __main__
     import numpy as np
     import time
-    # from StringIO import StringIO
+    # import gpflow
+    # tf.reset_default_graph()
+    # graph = tf.get_default_graph()
+    # gpflow.reset_default_session(graph=graph)
+
     __main__.__dict__['_display'] = display
 
     rules = ClassicGameRules(timeout)
@@ -741,29 +747,26 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
     score_prom = 0
     prob = []
 
-
-
     # tensorboard = keras.callbacks.TensorBoard(log_dir="logs\\" + NAME
-    tensorboard =None
+    tensorboard = None
     # name_prueba = "modelo_imagen_20000_04_01_dif1_1576522619_attemp_1_gamma0.9"
     # pacman.policy.load_Model("models/"+name_prueba+".h5")
     # pacman.epsilon =0.1
     n = 0
 
-
-    if numTraining==0:
+    if numTraining == 0:
         pacman.prueba = True
         pacman.epsilon = 0.1
 
-    if isinstance(pacman,PacmanQAgent) and numTraining == 0:
-        name =None
+    if isinstance(pacman, PacmanQAgent) and numTraining == 0:
+        name = None
         if difficulty == 0:
             name = "modelo_imagen_20000_04_01_dif0_1575607728_gamma_0.9_attemp_8"
         if difficulty == 1:
             name = "modelo_imagen_25000_04_01_dif1_1576737275_attemp_3_gamma0.9"
         if difficulty == 2:
             name = "modelo_imagen_25000_04_01_dif2_1577007228_attemp_2_gamma0.9"
-        pacman.policy_second.load_Model("models/"+name+".h5")
+        pacman.policy_second.load_Model("models/" + name + ".h5")
         pacman.epsilon = 0
     n = 0
 
@@ -771,9 +774,9 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
 
         if i > numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba = True
-        if i % 100 == 0 and not pacman.prueba:
+        if i % 1000== 0 and not pacman.prueba:
             if isinstance(pacman, PacmanQAgent):
-                pacman.policy_second.saveModel(NAME  )
+                pacman.policy_second.saveModel(NAME)
 
         beQuiet = i <= numTraining
 
@@ -799,33 +802,14 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         prob.append(int(game.state.isWin()))
         n += 1
 
-        if i % 10 == 0 and  not pacman.prueba:
-        #     # with tf.contrib.summary.always_record_summaries():
-        #     p = np.mean(prob)
-        #     # prob_summary.value[0].simple_value = p
-        #     # writer2.add_summary(prob_summary, i)
-        #     # score_summary.value[0].simple_value = score_prom
-        #     # writer2.add_summary(score_summary, i)
-        #     # writer2.flush()
-        #     # writer2.close()
-        #     # writer2 = tf.summary.FileWriter("logs\\"+NAME)
-        #     # with  tf.contrib.summary.create_file_writer("logs\\" + NAME,
-        #     #                                             flush_millis=2500).set_as_default(), tf.contrib.summary.always_record_summaries():
-        #     #     tf.contrib.summary.scalar("Probability", np.mean(prob))
-        #     #     tf.contrib.summary.scalar("Mean Sore", score_prom)
-        #
-        #     # with train_summary_writer.as_default():
-        #     #     tf.summary.scalar('Probability', p, step=EPISODES)
-        #     #     tf.summary.scalar('Score', score_prom, step=EPISODES)
-        #
+        if i % 10 == 0 and not pacman.prueba:
             p = np.mean(prob)
             with open(nombre_archivo, "a") as f:
-                f.write(str(p)+"\n")
+                f.write(str(p) + "\n")
 
             prob = []
             score_prom = 0
             n = 0
-
 
         if not beQuiet: games.append(game)
 
@@ -839,8 +823,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp,inicio,fi
         if pacman.BREAK:
             break
 
-
-    if (numGames -  numTraining) > 0:
+    if (numGames - numTraining) > 0:
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True) / float(len(wins))
@@ -919,22 +902,18 @@ if __name__ == '__main__':
     > python pacman.py --help
     """
 
-      # Get game components based on input
+    # Get game components based on input
 
     args = readCommand(sys.argv[1:])
     crear_layout(args["difficulty"])
     t0 = time.time()
     ini = args["inicio"]
-    fin = args["final"]+1
-    for i in range(ini,fin):
+    fin = args["final"] + 1
+    for i in range(ini, fin):
         args = readCommand(sys.argv[1:])
         args["attemp"] = i
         runGames(**args)
-    tn= time.time()
-    print(f"Tiempo total trasncurrido {(tn-t0)/(60*60):0.3f} h")
+    tn = time.time()
+    print(f"Tiempo total trasncurrido {(tn - t0) / (60 * 60):0.3f} h")
 
     import numpy as np
-
-
-
-

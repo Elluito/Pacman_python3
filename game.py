@@ -522,7 +522,19 @@ class Game:
     """
     The Game manages the control flow, soliciting actions from agents.
     """
-
+    __slots__ = ('agentCrashed',
+        'agents',
+        'display',
+        'rules',
+        'startingIndex',
+        'gameOver',
+        'muteAgents',
+        'catchExceptions',
+        'moveHistory',
+        'totalAgentTimes',
+        'totalAgentTimeWarnings',
+        'agentTimeout',
+                 'agentOutput','state','numMoves')
     def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False ):
         self.agentCrashed = False
         self.agents = agents
@@ -739,7 +751,7 @@ class Game:
 
 
 
-        print(f"Episodio: {EPISODES:d}")
+        # print(f"Episodio: {EPISODES:d}")
 
         # inform a learning agent of the game result
         #TODO aquí aparecen cuando se acaban los juegos
