@@ -66,7 +66,7 @@ def graficar_todos_juntos(max_number):
     # print(all_datos)
     for i,prom in enumerate(all_datos):
         x = np.linspace(0, len(prom) * 10, len(prom))
-        plt.plot(x,  smooth(prom,0.9),label=names[i])
+        plt.plot(x,  smooth(prom,0),label=names[i])
     plt.xlabel("Episodios transcurridos")
     plt.ylabel("Probabilidad  de ganar")
     plt.legend()
