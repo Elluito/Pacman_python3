@@ -688,6 +688,7 @@ def loadAgent(pacman, nographics):
             except ImportError:
 
                 # __import__(modulename[:-3])
+                module = __import__(modulename[:-3])
                 print(modulename)
                 continue
             if pacman in dir(module):
