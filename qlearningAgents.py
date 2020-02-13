@@ -90,14 +90,14 @@ def dar_pedazo_de_imagenstate(state:GameState,policy):
 
 def dar_features(policy,state:GameState):
     if not policy.use_image:
-        posición_pacman = state.getPacmanPosition()
-        posición_fantasma = state.getGhostPosition(1)
+        posicion_pacman = state.getPacmanPosition()
+        posicion_fantasma = state.getGhostPosition(1)
         temp = np.nonzero(np.array(state.getFood().data))
         if state.data._win:
-            posición_comida = posición_pacman
+            posicion_comida = posición_pacman
         else:
-            posición_comida = (int(temp[0]),int(temp[1]))
-        distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posición_comida))
+            posicion_comida = (int(temp[0]),int(temp[1]))
+        distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posicion_comida))
         res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
         return res
     else:
