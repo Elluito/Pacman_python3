@@ -137,7 +137,7 @@ def create_LTSautoencoder(task):
                 TimeDistributed(Dense(27))]
     model= keras.Sequential(layers)
     model.compile(loss = "mse",optimizer=optimizers.Adam(0.0001))
-    with tf.device("GPU:0"):
+    with tf.device("XLA_GPU:0"):
         history = model.fit(X_0_train,X_0_train,batch_size=128,epochs=200,verbose=2,validation_data=(X_0_val,X_0_val))
 
     plt.plot(history.history['loss'], linewidth=2, label='Train')
