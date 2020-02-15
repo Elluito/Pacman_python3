@@ -521,7 +521,7 @@ class QLearningAgent(ReinforcementAgent):
 
         self.num_trans = 0
         self.lastReward= 0
-        self.n = 0
+        self.n2 = 0
         self.eps_start = EPS_START
         self.eps_end = EPS_END
         self.similarity_function = None

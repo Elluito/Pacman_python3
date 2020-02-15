@@ -680,12 +680,12 @@ def loadAgent(pacman, nographics):
     for moduleDir in pythonPathDirs:
         if not os.path.isdir(moduleDir): continue
         moduleNames = [f for f in os.listdir(moduleDir) if f.endswith('Agents.py')]
-        print(moduleNames)
+
         for modulename in moduleNames:
 
             try:
                 module = __import__(modulename[:-3])
-                print(module)
+
 
 
             except ImportError as err:
