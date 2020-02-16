@@ -923,4 +923,4 @@ if __name__ == '__main__':
     tn = time.time()
     print(f"Tiempo total trasncurrido {(tn - t0) / (60 * 60):0.3f} h")
 
-    import numpy as np
+

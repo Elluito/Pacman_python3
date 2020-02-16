@@ -317,6 +317,9 @@ class Policy:
         # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
+        resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='grpc://alfredoavendano')
+        tf.config.experimental_connect_to_cluster(resolver)
+        tf.tpu.experimental.initialize_tpu_system(resolver)
 
 
 
@@ -325,23 +328,25 @@ class Policy:
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
-            self.model = keras.Sequential([
-                keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
-                keras.layers.BatchNormalization(),
-                keras.layers.Activation("relu"),
-                keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
-                keras.layers.BatchNormalization(),
-                keras.layers.Activation("relu"),
-                keras.layers.Conv2D(64, (3, 3),use_bias=False),
-                keras.layers.BatchNormalization(),
-                keras.layers.Activation("relu"),
-                keras.layers.Flatten(),
-                keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
-                keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
-                # keras.layers.Dropout(rate=0.6),
-                keras.layers.Dense(self.action_space, activation="linear")])
-            if not use_prior:
-                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01))
+            strategy = tf.distribute.experimental.TPUStrategy(resolver)
+            with strategy.scope():
+                self.model = keras.Sequential([
+                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.Activation("relu"),
+                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.Activation("relu"),
+                    keras.layers.Conv2D(64, (3, 3),use_bias=False),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.Activation("relu"),
+                    keras.layers.Flatten(),
+                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
+                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
+                    # keras.layers.Dropout(rate=0.6),
+                    keras.layers.Dense(self.action_space, activation="linear")])
+                if not use_prior:
+                    self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01))
 
         else:
             self.model = keras.Sequential([
