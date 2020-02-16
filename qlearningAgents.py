@@ -318,7 +318,7 @@ class Policy:
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
         print("llegue aqui")
-        resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
+        resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='grcp;//10.240.1.2')
         tf.config.experimental_connect_to_cluster(resolver)
         tf.tpu.experimental.initialize_tpu_system(resolver)
 
