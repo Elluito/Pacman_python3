@@ -398,7 +398,7 @@ class Policy:
         if not self.priority:
             # print(gpus)
 
-            with tf.device("GPU:0"):
+            # with tf.device("GPU:0"):
 
                 if len(self.memory) < BATCH_SIZE:
                             return
