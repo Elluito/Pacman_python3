@@ -317,7 +317,8 @@ class Policy:
         # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
-        resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='grpc://alfredoavendano')
+        print("llegue aqui")
+        resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
         tf.config.experimental_connect_to_cluster(resolver)
         tf.tpu.experimental.initialize_tpu_system(resolver)
 
