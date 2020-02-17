@@ -295,6 +295,31 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
+
+@tf.function
+def train_step(dist_inputs):
+        global policy
+
+        def step_fn(inputs):
+            features, labels = inputs
+
+            with tf.GradientTape() as tape:
+                # training=True is only needed if there are layers with different
+                # behavior during training versus inference (e.g. Dropout).
+                logits = policy.model(features, training=True)
+                cross_entropy = tf.compat.v1.losses.huber_loss(
+                    labels=labels, predictions=logits)
+                loss = tf.reduce_sum(cross_entropy) * (1.0 / BATCH_SIZE)
+
+            grads = tape.gradient(loss, policy.model.trainable_variables)
+            policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
+            return cross_entropy
+
+        per_example_losses = policy.strategy.experimental_run_v2(
+            step_fn, args=(dist_inputs,))
+        mean_loss = policy.strategy.reduce(
+            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return mean_loss
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
@@ -393,28 +418,7 @@ class Policy:
 
         return imagen.reshape((-1, 1))
 
-    @tf.function
-    def train_step(self,dist_inputs):
-        def step_fn(inputs):
-            features, labels = inputs
 
-            with tf.GradientTape() as tape:
-                # training=True is only needed if there are layers with different
-                # behavior during training versus inference (e.g. Dropout).
-                logits = self.model(features, training=True)
-                cross_entropy = tf.compat.v1.losses.huber_loss(
-                    labels=labels, predictions=logits)
-                loss = tf.reduce_sum(cross_entropy) * (1.0 / BATCH_SIZE)
-
-            grads = tape.gradient(loss, self.model.trainable_variables)
-            self.optimizer.apply_gradients(list(zip(grads, self.model.trainable_variables)))
-            return cross_entropy
-
-        per_example_losses = self.strategy.experimental_run_v2(
-            step_fn, args=(dist_inputs,))
-        mean_loss = self.strategy.reduce(
-            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
-        return mean_loss
     # @tf.function
     def update_policy(self,agent,callbacks=[],log_dir=""):
         if not self.priority:
@@ -456,10 +460,12 @@ class Policy:
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
                 dataset = tf.data.Dataset.from_tensors((state_batch,q_values)).batch(BATCH_SIZE)
                 dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
+                global policy
+                policy = self
                 with self.strategy.scope():
                     for _ in range(20):
                         for inputs in dist_dataset:
-                            cosa = self.train_step(inputs)
+                            cosa = train_step(inputs)
                             print(cosa)
 
 
