@@ -346,8 +346,8 @@ class Policy:
                     keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
                     # keras.layers.Dropout(rate=0.6),
                     keras.layers.Dense(self.action_space, activation="linear")])
-                if not use_prior:
-                    self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01))
+                # if not use_prior:
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01))
 
         else:
             self.model = keras.Sequential([
@@ -607,7 +607,7 @@ class QLearningAgent(ReinforcementAgent):
         if self.policy_second.use_image:
             shape = [1]
             shape.extend(self.policy_second.state_space)
-            Q_actual =self.policy_second.model.predict(features.reshape(shape))
+            Q_actual =np.array(self.policy_second.model(features.reshape(shape)))
 
 
         else:
