@@ -295,7 +295,6 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-
 @tf.function
 def train_step(dist_inputs):
         global policy
@@ -310,7 +309,7 @@ def train_step(dist_inputs):
                 # print("logits")
                 # print(logits)
                 cross_entropy = tf.compat.v1.losses.huber_loss(
-                    labels=labels, predictions=logits,reduction=None)
+                    labels=labels, predictions=logits,reduciton=Reduction.NONE)
                 loss = tf.reduce_sum(cross_entropy)* (1.0 / BATCH_SIZE)
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
