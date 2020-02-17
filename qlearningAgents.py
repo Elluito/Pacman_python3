@@ -295,32 +295,37 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-@tf.function
-def train_step(dist_inputs):
+# @tf.function
+def train_step(inputs):
         global policy
         # print(policy)
-        def step_fn(inputs):
-            features, labels = inputs
+        features,labels = inputs
+        with policy.strategy.scope():
+            l = tf.keras.losses.Huber(reduction=keras.losses.Reduction.NONE)
+            def compute_loss(labels,predictions):
 
+                    # training=True is only needed if there are layers with different
+                    # behavior during training versus inference (e.g. Dropout).
+                    # logits = policy.model(features)
+
+                    per_example_loss=l(labels=labels,y_pred=predictions)
+
+                    return tf.nn.compute_average_loss(per_example_loss, global_batch_size=BATCH_SIZE)
+
+                # grads = tape.gradient(loss, policy.model.trainable_variables)
+                # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
+                # return cross_entropy
             with tf.GradientTape() as tape:
-                # training=True is only needed if there are layers with different
-                # behavior during training versus inference (e.g. Dropout).
-                logits = policy.model(features)
-                # print("logits")
-                # print(logits)
-                cross_entropy = tf.compat.v1.losses.huber_loss(
-                    labels=labels, predictions=logits)
-                loss = cross_entropy* (1.0 / BATCH_SIZE)
+                predictions = policy.model(features, training=True)
+                loss = compute_loss(labels, predictions)
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
-            policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
-            return cross_entropy
+            policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
 
-        per_example_losses = policy.strategy.experimental_run_v2(
-            step_fn, args=(dist_inputs,))
-        # print(per_example_losses)
-        # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
-        return per_example_losses
+
+            # print(per_example_losses)
+            # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+            return loss
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
@@ -464,11 +469,24 @@ class Policy:
                 global policy
                 policy = self
                 with self.strategy.scope():
-                    for _ in range(20):
-                        for inputs in dist_dataset:
-                            cosa = train_step(inputs)
-                            # print(np.array(cosa))
 
+                    @tf.function
+                    def distributed_train_step(dataset_inputs):
+                        per_replica_losses = self.strategy.experimental_run_v2(train_step,
+                                                                          args=(dataset_inputs,))
+                        return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                                               axis=None)
+
+                    for epoch in range(20):
+                        total_loss = 0.0
+                        num_batches = 0
+                        for x in dist_dataset:
+                            total_loss += distributed_train_step(x)
+                            num_batches += 1
+                        train_loss = total_loss / num_batches
+
+                        template = ("Epoch {}, Loss: {}, A")
+                        print(template.format(epoch + 1, train_loss))
 
 
 
