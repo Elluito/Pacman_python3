@@ -367,7 +367,7 @@ class Policy:
                     keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
                     # keras.layers.Dropout(rate=0.6),
-                    keras.layers.Dense(self.action_space, activation="linear")])
+                    keras.layers.Dense(5, activation="linear")])
                 # if not use_prior:
 
                 self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
