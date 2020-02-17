@@ -546,7 +546,7 @@ def readCommand(argv):
     parser.add_option('-t', '--textGraphics', action='store_true', dest='textGraphics',
                       help='Display output as text only', default=False)
     parser.add_option('-q', '--quietTextGraphics', action='store_true', dest='quietGraphics',
-                      help='Generate minimal output and no graphics', default=False)
+                      help='Generate minimal output and no graphics', default=True)
     parser.add_option('-g', '--ghosts', dest='ghost',
                       help=default('the ghost agent TYPE in the ghostAgents module to use'),
                       metavar='TYPE', default='RandomGhost')
