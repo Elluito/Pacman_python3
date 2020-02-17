@@ -296,7 +296,7 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 class Policy:
-    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space')
+    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy')
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
