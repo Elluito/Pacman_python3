@@ -329,8 +329,9 @@ class Policy:
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
-            strategy = tf.distribute.experimental.TPUStrategy(resolver)
-            with strategy.scope():
+            self.strategy = tf.distribute.experimental.TPUStrategy(resolver)
+
+            with self.strategy.scope():
                 self.model = keras.Sequential([
                     keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
                     keras.layers.BatchNormalization(),
@@ -398,7 +399,7 @@ class Policy:
         if not self.priority:
             # print(gpus)
 
-            # with tf.device("GPU:0"):
+            with self.strategy.scope():
 
                 if len(self.memory) < BATCH_SIZE:
                             return
@@ -432,7 +433,8 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                self.model.fit(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
+                # with self.strategy.scope():
+                self.model.fit(state_batch, q_values,batch_size=len(state_batch),epochs=20,verbose=0)
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
