@@ -311,7 +311,7 @@ def train_step(dist_inputs):
                 print(logits)
                 cross_entropy = tf.compat.v1.losses.huber_loss(
                     labels=labels, predictions=logits)
-                loss = tf.reduce_sum(cross_entropy) * (1.0 / BATCH_SIZE)
+                loss = cross_entropy* (1.0 / BATCH_SIZE)
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
             policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
