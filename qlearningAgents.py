@@ -348,7 +348,7 @@ class Policy:
         # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
-        print("llegue aqui")
+
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
         tf.config.experimental_connect_to_cluster(resolver)
         tf.tpu.experimental.initialize_tpu_system(resolver)
@@ -472,6 +472,7 @@ class Policy:
 
                     @tf.function
                     def distributed_train_step(dataset_inputs):
+                        tf.distribute.get_replica_context().merge_all()
                         per_replica_losses = self.strategy.experimental_run_v2(train_step,
                                                                           args=(dataset_inputs,))
                         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
