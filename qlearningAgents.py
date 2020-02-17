@@ -354,7 +354,7 @@ class Policy:
 
             with self.strategy.scope():
                 self.model = keras.Sequential([
-                    keras.layers.Conv2D(32, (3, 3),  input_shape=(self.state_space,)),
+                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
                     keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
