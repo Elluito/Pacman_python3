@@ -296,7 +296,7 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 class Policy:
-    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy')
+    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
@@ -322,10 +322,6 @@ class Policy:
         tf.config.experimental_connect_to_cluster(resolver)
         tf.tpu.experimental.initialize_tpu_system(resolver)
 
-
-
-        # self.global_step = tfe.Variable(0)
-        # self.loss_avg = tfe.metrics.Mean()
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
@@ -348,8 +344,9 @@ class Policy:
                     # keras.layers.Dropout(rate=0.6),
                     keras.layers.Dense(self.action_space, activation="linear")])
                 # if not use_prior:
-                op =keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
-                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=op)
+
+                self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
+                # self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=op)
 
         else:
             self.model = keras.Sequential([
@@ -395,12 +392,35 @@ class Policy:
                 imagen[i, j] = self.mapeo[filas[i][j]] / 255
 
         return imagen.reshape((-1, 1))
+
+    @tf.function
+    def train_step(self,dist_inputs):
+        def step_fn(inputs):
+            features, labels = inputs
+
+            with tf.GradientTape() as tape:
+                # training=True is only needed if there are layers with different
+                # behavior during training versus inference (e.g. Dropout).
+                logits = self.model(features, training=True)
+                cross_entropy = tf.compat.v1.losses.huber_loss(
+                    labels=labels, predictions=logits)
+                loss = tf.reduce_sum(cross_entropy) * (1.0 / BATCH_SIZE)
+
+            grads = tape.gradient(loss, self.model.trainable_variables)
+            self.optimizer.apply_gradients(list(zip(grads, self.model.trainable_variables)))
+            return cross_entropy
+
+        per_example_losses = self.strategy.experimental_run_v2(
+            step_fn, args=(dist_inputs,))
+        mean_loss = self.strategy.reduce(
+            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return mean_loss
     # @tf.function
     def update_policy(self,agent,callbacks=[],log_dir=""):
         if not self.priority:
             # print(gpus)
 
-            with self.strategy.scope():
+            # with self.strategy.scope():
 
                 if len(self.memory) < BATCH_SIZE:
                             return
@@ -434,8 +454,18 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                # with self.strategy.scope():
-                self.model.fit(state_batch, q_values,batch_size=len(state_batch),epochs=20,verbose=0)
+                dataset = tf.data.Dataset.from_tensors((state_batch,q_values)).batch(BATCH_SIZE)
+                dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
+                with self.strategy.scope():
+                    for _ in range(20):
+                        for inputs in dist_dataset:
+                            print(self.train_step(inputs))
+
+
+
+
+
+                    # self.model.fit(state_batch, q_values,batch_size=len(state_batch),epochs=20,verbose=0)
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
