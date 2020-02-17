@@ -349,7 +349,7 @@ class Policy:
                     keras.layers.Dense(self.action_space, activation="linear")])
                 # if not use_prior:
                 op =keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
-                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=tf.contrib.tpu.CrossShardOptimizer(op))
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=op)
 
         else:
             self.model = keras.Sequential([
