@@ -319,9 +319,9 @@ def train_step(dist_inputs):
 
         per_example_losses = policy.strategy.experimental_run_v2(
             step_fn, args=(dist_inputs,))
-        mean_loss = policy.strategy.reduce(
-            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
-        return mean_loss
+        print(per_example_losses)
+        # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return per_example_losses
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
