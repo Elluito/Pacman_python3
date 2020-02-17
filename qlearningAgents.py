@@ -309,8 +309,8 @@ def train_step(dist_inputs):
                 # print("logits")
                 # print(logits)
                 cross_entropy = tf.compat.v1.losses.huber_loss(
-                    labels=labels, predictions=logits,reduciton=Reduction.NONE)
-                loss = tf.reduce_sum(cross_entropy)* (1.0 / BATCH_SIZE)
+                    labels=labels, predictions=logits)
+                loss = cross_entropy* (1.0 / BATCH_SIZE)
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
             policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
@@ -319,8 +319,8 @@ def train_step(dist_inputs):
         per_example_losses = policy.strategy.experimental_run_v2(
             step_fn, args=(dist_inputs,))
         # print(per_example_losses)
-        mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
-        return mean_loss
+        # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return per_example_losses
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
