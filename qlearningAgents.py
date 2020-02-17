@@ -333,7 +333,7 @@ class Policy:
         if use_image:
             self.state_space = (self.height,self.width,1)
         else:
-            self.state_space = (5,)
+            self.state_space = (dim_action,)
         self.action_space = dim_action
         self.use_image = use_image
         self.gamma = gamma
@@ -367,6 +367,7 @@ class Policy:
                     keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(self.action_space, activation="linear")])
+                self.model.summary()
                 # if not use_prior:
 
                 self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
@@ -696,7 +697,8 @@ class QLearningAgent(ReinforcementAgent):
             accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
                 range(len(self.actions)))
 
-
+        print("Accion que tome:")
+        print(accion)
 
         action = self.actions[accion]
 
