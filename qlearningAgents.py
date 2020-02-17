@@ -432,8 +432,7 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                for _ in range(20):
-                    self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
+                self.model.fit(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
