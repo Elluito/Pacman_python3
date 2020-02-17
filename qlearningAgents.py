@@ -468,7 +468,7 @@ class Policy:
                     for _ in range(20):
                         for inputs in dist_dataset:
                             cosa = train_step(inputs)
-                            print(cosa)
+                            print(cosa.numpy())
 
 
 
