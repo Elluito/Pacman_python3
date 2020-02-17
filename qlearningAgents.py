@@ -459,7 +459,8 @@ class Policy:
                 with self.strategy.scope():
                     for _ in range(20):
                         for inputs in dist_dataset:
-                            print(self.train_step(inputs))
+                            cosa = self.train_step(inputs)
+                            print(cosa)
 
 
 
