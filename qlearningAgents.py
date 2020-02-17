@@ -32,7 +32,7 @@ from segtree import SumSegmentTree, MinSegmentTree
 from pacman import GameState
 
 global gpus
-gpus = tf.config.experimental.list_physical_devices('GPU')
+# gpus = tf.config.experimental.list_physical_devices('GPU')
 
 NORTH = 'North'
 SOUTH = 'South'
@@ -467,7 +467,7 @@ class Policy:
                     for _ in range(20):
                         for inputs in dist_dataset:
                             cosa = train_step(inputs)
-                            print(np.array(cosa))
+                            # print(np.array(cosa))
 
 
 
