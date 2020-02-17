@@ -299,14 +299,16 @@ class ReplayMemory(object):
 @tf.function
 def train_step(dist_inputs):
         global policy
-
+        print(policy)
         def step_fn(inputs):
             features, labels = inputs
 
             with tf.GradientTape() as tape:
                 # training=True is only needed if there are layers with different
                 # behavior during training versus inference (e.g. Dropout).
-                logits = policy.model(features, training=True)
+                logits = policy.model(features)
+                print("logits")
+                print(logits)
                 cross_entropy = tf.compat.v1.losses.huber_loss(
                     labels=labels, predictions=logits)
                 loss = tf.reduce_sum(cross_entropy) * (1.0 / BATCH_SIZE)
