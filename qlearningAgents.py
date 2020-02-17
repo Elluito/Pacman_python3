@@ -299,7 +299,7 @@ class ReplayMemory(object):
 @tf.function
 def train_step(dist_inputs):
         global policy
-        print(policy)
+        # print(policy)
         def step_fn(inputs):
             features, labels = inputs
 
@@ -307,11 +307,11 @@ def train_step(dist_inputs):
                 # training=True is only needed if there are layers with different
                 # behavior during training versus inference (e.g. Dropout).
                 logits = policy.model(features)
-                print("logits")
-                print(logits)
+                # print("logits")
+                # print(logits)
                 cross_entropy = tf.compat.v1.losses.huber_loss(
-                    labels=labels, predictions=logits)
-                loss = cross_entropy* (1.0 / BATCH_SIZE)
+                    labels=labels, predictions=logits,reduction=None)
+                loss = tf.reduce_sum(cross_entropy)* (1.0 / BATCH_SIZE)
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
             policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
@@ -319,9 +319,9 @@ def train_step(dist_inputs):
 
         per_example_losses = policy.strategy.experimental_run_v2(
             step_fn, args=(dist_inputs,))
-        print(per_example_losses)
-        # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
-        return per_example_losses
+        # print(per_example_losses)
+        mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return mean_loss
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
@@ -468,7 +468,7 @@ class Policy:
                     for _ in range(20):
                         for inputs in dist_dataset:
                             cosa = train_step(inputs)
-                            print(cosa.numpy())
+                            print(np.array(cosa))
 
 
 
