@@ -458,7 +458,7 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                dataset = tf.data.Dataset.from_tensors((state_batch,q_values)).batch(BATCH_SIZE)
+                dataset = tf.data.Dataset.from_tensors((state_batch,q_values))
                 dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
                 global policy
                 policy = self
