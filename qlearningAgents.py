@@ -363,10 +363,9 @@ class Policy:
                     keras.layers.Conv2D(64, (3, 3),use_bias=False),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
-                    keras.layers.Reshape((-1,)),
+                    keras.layers.Reshape((-1,1)),
                     keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
-                    keras.layers.Reshape((-1,)),
                     keras.layers.Dense(self.action_space, activation="linear")])
                 # if not use_prior:
 
