@@ -502,17 +502,10 @@ class Policy:
 
             grads = tape.gradient(loss, self.model.trainable_variables)
             del tape
-
             # grads = self.optimizer.compute_gradients(f,self.model.trainable_variables)
-
-
             # for i,elem in enumerate(grads):
             #     grads[i] =elem[1].numpy()
-
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
-
-
-
             # salidas = self.model.fit(obs_batch, q_values, batch_size=len(q_values), epochs=20, verbose=0)
             # print(salidas.history["loss"])
             td_error = self.model.predict([obs_batch])[act_batch[:, 0], act_batch[:, 1]]-q_update
@@ -696,13 +689,9 @@ class QLearningAgent(ReinforcementAgent):
         if accion is None:
             accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
                 range(len(self.actions)))
-
-        print("Accion que tome:")
-        print(accion)
-
         action = self.actions[accion]
 
-        # util.raiseNotDefined()
+
 
         if not self.prueba:
                 a =(EPS_END-EPS_START)/self.num_episodes
