@@ -531,10 +531,6 @@ class Policy:
                         template = ("Epoch "+str(epoch)+", Loss:"+str(train_loss))
                         print(template)
                         # print(template.format(epoch + 1, train_loss))
-
-
-
-
                     # self.model.fit(state_batch, q_values,batch_size=len(state_batch),epochs=20,verbose=0)
         else:
             if len(self.priority_memory) < BATCH_SIZE:
