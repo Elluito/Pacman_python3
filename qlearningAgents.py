@@ -51,7 +51,7 @@ resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendan
 tf.config.experimental_connect_to_cluster(resolver)
 tf.tpu.experimental.initialize_tpu_system(resolver)
 strategy = tf.distribute.experimental.TPUStrategy(resolver)
-global  strategy
+# global  strategy
 
 def flatten(X):
     '''
@@ -474,7 +474,7 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                strategy = self.strategy
+                # strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
                 GLOBAL_BATCH_SIZE = BATCH_SIZE/ strategy.num_replicas_in_sync
                 dataset = tf.data.Dataset.from_tensors((list(state_batch),list(q_values)))
@@ -482,7 +482,7 @@ class Policy:
                 global policy
                 policy = self
 
-                with self.strategy.scope():
+                with strategy.scope():
 
                     @tf.function
                     def distributed_train_step(dataset_inputs):
