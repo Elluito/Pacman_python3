@@ -474,7 +474,7 @@ class Policy:
 
                 with self.strategy.scope():
 
-                    @tf.function
+
                     def distributed_train_step(dataset_inputs):
                         # tf.distribute.get_replica_context().merge_all()
                         per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
