@@ -30,8 +30,8 @@ import pickle
 import  tensorboard as tb
 from segtree import SumSegmentTree, MinSegmentTree
 from pacman import GameState
+import inspect
 
-global gpus
 # gpus = tf.config.experimental.list_physical_devices('GPU')
 
 NORTH = 'North'
@@ -338,7 +338,11 @@ class Policy:
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        print('caller name:', calframe[1][3])
         print("INICIE POLICY ESTA VEZ")
+
         self.width = width
         self.height = height
 
@@ -475,9 +479,14 @@ class Policy:
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
                 # strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
-                GLOBAL_BATCH_SIZE = BATCH_SIZE/ strategy.num_replicas_in_sync
-                dataset = tf.data.Dataset.from_tensors((list(state_batch),list(q_values)))
-                dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
+                GLOBAL_BATCH_SIZE = int(BATCH_SIZE/ strategy.num_replicas_in_sync)
+                print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
+                print(f"Number of replicas: {strategy.num_replicas_in_sync}")
+                X = tf.data.Dataset.from_tensors(state_batch)
+                y = tf.data.Dataset.from_tensors(q_values)
+                dataset = tf.data.Dataset.zip((X,y))
+                batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
+                dist_dataset = self.strategy.experimental_distribute_dataset(batched_data)
                 global policy
                 policy = self
 
@@ -489,14 +498,14 @@ class Policy:
                         per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
                         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=None)
 
-                    for epoch in range(20):
+                    for epoch in range(2):
                         total_loss = 0.0
                         num_batches = 0
                         print("LLEGO A EL DATASET DISTRIBUIDO")
                         train_iter = iter(dist_dataset)
 
                         for _ in range(10):
-                            total_loss += distributed_train_step(next(train_iter))
+                            total_loss += distributed_train_step(dist_dataset)
                         for x in dist_dataset:
                             total_loss += distributed_train_step(x)
                             num_batches += 1
