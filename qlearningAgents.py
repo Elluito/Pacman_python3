@@ -502,13 +502,14 @@ class Policy:
                         total_loss = 0.0
                         num_batches = 0
                         print("LLEGO A EL DATASET DISTRIBUIDO")
-                        train_iter = iter(dist_dataset)
-
-                        for _ in range(5):
-                            print(_)
-                            total_loss += distributed_train_step(next(train_iter))
-                        # for x in dist_dataset:
-                        #     total_loss += distributed_train_step(x)
+                        print(dist_dataset)
+                        # train_iter = iter(dist_dataset)
+                        #
+                        # for _ in range(5):
+                        #     print(_)
+                        #     total_loss += distributed_train_step(next(train_iter))
+                        for x in dist_dataset:
+                            total_loss += distributed_train_step(x)
                             num_batches += 1
                         train_loss = total_loss / num_batches
 
