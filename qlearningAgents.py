@@ -490,7 +490,7 @@ class Policy:
                 print("Dataset:"+str(dataset))
                 batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
                 print("batched dataset:"+str(batched_data))
-                print(list(batched_data.as_numpy_iterator()))
+                print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
                 prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values))
                 print("Probando con from_tensor_slices:"+str(prob_dataset))
 
