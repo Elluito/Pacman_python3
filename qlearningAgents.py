@@ -338,7 +338,7 @@ class Policy:
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
-
+        print("INICIE POLICY EST A VEZ")
         self.width = width
         self.height = height
 
@@ -596,6 +596,7 @@ class QLearningAgent(ReinforcementAgent):
         self.eps_end = EPS_END
         self.similarity_function = None
         if "transfer" in args.keys():
+            print("ENTRE AL IF DEL TRASNFER")
             self.policy_first = Policy(width, height, 5,use_image=True,use_prior=False)
             self.policy_second = Policy(width, height, 5,use_image=True,use_prior=False)
             num_first = args["transfer"][0]
