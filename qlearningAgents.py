@@ -491,6 +491,7 @@ class Policy:
                 batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
                 batched_data =  batched_data.enumerate(start=0)
                 print("batched dataset:"+str(batched_data))
+                print(list(batched_data.as_numpy_iterator()))
                 print("deberian entrar al for")
                 for x in batched_data.as_numpy_iterator():
                     print(x)
