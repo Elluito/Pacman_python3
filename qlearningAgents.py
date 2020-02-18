@@ -486,7 +486,10 @@ class Policy:
                 y = tf.data.Dataset.from_tensors(q_values)
                 dataset = tf.data.Dataset.zip((X,y))
                 batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
-                dist_dataset = self.strategy.experimental_distribute_dataset(batched_data)
+                batched_data =  batched_data.enumerate(start=0)
+                for x in batched_data.as_numpy_iterator():
+                    print(x)
+                dist_dataset = strategy.experimental_distribute_dataset(batched_data)
                 global policy
                 policy = self
 
@@ -502,7 +505,7 @@ class Policy:
                         total_loss = 0.0
                         num_batches = 0
                         print("LLEGO A EL DATASET DISTRIBUIDO")
-                        print(dist_dataset)
+                        print(dist_dataset[0])
                         # train_iter = iter(dist_dataset)
                         #
                         # for _ in range(5):
