@@ -532,6 +532,7 @@ class Policy:
                             num_batches += 1
                         train_loss = total_loss / num_batches
                         template = ("Epoch "+str(epoch)+", Loss:"+str(train_loss))
+                        print(template)
                         # print(template.format(epoch + 1, train_loss))
 
 
