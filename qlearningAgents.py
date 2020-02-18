@@ -533,7 +533,7 @@ class Policy:
                         train_loss = total_loss / num_batches
 
                         template = ("Epoch {}, Loss: {}, A")
-                        print(template.format(epoch + 1, train_loss.numpy()))
+                        print(template.format(epoch + 1, train_loss.to_numpy()))
 
 
 
