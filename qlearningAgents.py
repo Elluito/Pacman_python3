@@ -472,7 +472,7 @@ class Policy:
 
                     @tf.function
                     def distributed_train_step(dataset_inputs):
-                        tf.distribute.get_replica_context().merge_all()
+                        # tf.distribute.get_replica_context().merge_all()
                         per_replica_losses = self.strategy.experimental_run_v2(train_step,
                                                                           args=(dataset_inputs,))
                         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
