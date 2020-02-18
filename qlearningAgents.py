@@ -675,7 +675,7 @@ class QLearningAgent(ReinforcementAgent):
 
     def set_start_time(self):
         self.episodeStartTime =time.time()
-
+    @tf.function
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
