@@ -494,7 +494,7 @@ class Policy:
                 print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
                 prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values))
                 print("Probando con from_tensor_slices:"+str(prob_dataset))
-                print("Batched prob_dataset")
+                print("Batched prob_dataset:"+str(prob_dataset.batch(GLOBAL_BATCH_SIZE)))
 
 
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
