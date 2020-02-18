@@ -500,6 +500,7 @@ class Policy:
 
 
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
+                indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
                 global policy
                 policy = self
 
@@ -521,11 +522,11 @@ class Policy:
                         # for _ in range(5):
                         #     print(_)
                         #     total_loss += distributed_train_step(next(train_iter))
-                        distributed_train_step((state_batch,q_values))
+                        # distributed_train_step((state_batch,q_values))
                         for i in range(8):
-                            x = np.random.sample(state_batch)
-                            y =
-                            total_loss += distributed_train_step(x)
+                            x = state_batch[indexes[i],:,:,:]
+                            y = q_values[indexes[i],:]
+                            total_loss += distributed_train_step((x,y))
                             num_batches += 1
                         train_loss = total_loss / num_batches
 
