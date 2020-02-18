@@ -47,7 +47,11 @@ MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 128
-
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
+tf.config.experimental_connect_to_cluster(resolver)
+f.tpu.experimental.initialize_tpu_system(resolver)
+global  strategy
+strategy = tf.distribute.experimental.TPUStrategy(resolver)
 def flatten(X):
     '''
     Flatten a 3D array.
@@ -295,9 +299,9 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-global STRATEGY
+global strategy
 
-with STRATEGY.scope():
+with strategy.scope():
     @tf.function
     def train_step(inputs):
             global policy, GLOBAL_BATCH_SIZE
@@ -352,16 +356,16 @@ class Policy:
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
 
-        resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
-        tf.config.experimental_connect_to_cluster(resolver)
-        tf.tpu.experimental.initialize_tpu_system(resolver)
+
 
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
-            self.strategy = tf.distribute.experimental.TPUStrategy(resolver)
-            global STRATEGY
-            STRATEGY = self.strategy
+
+
+            global strategy
+
+            elf.strategy =strategy
 
             with self.strategy.scope():
                 self.model = keras.Sequential([
