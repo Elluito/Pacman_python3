@@ -489,12 +489,10 @@ class Policy:
                 dataset = tf.data.Dataset.zip((X,y))
                 print("Dataset:"+str(dataset))
                 batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
-                batched_data =  batched_data.enumerate(start=0)
                 print("batched dataset:"+str(batched_data))
                 print(list(batched_data.as_numpy_iterator()))
-                print("deberian entrar al for")
-                for x in batched_data.as_numpy_iterator():
-                    print(x)
+
+
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
                 global policy
                 policy = self
