@@ -49,7 +49,7 @@ Transition = namedtuple('Transition',
 BATCH_SIZE = 128
 resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
 tf.config.experimental_connect_to_cluster(resolver)
-f.tpu.experimental.initialize_tpu_system(resolver)
+tf.tpu.experimental.initialize_tpu_system(resolver)
 global  strategy
 strategy = tf.distribute.experimental.TPUStrategy(resolver)
 def flatten(X):
