@@ -516,6 +516,7 @@ class Policy:
                         # for _ in range(5):
                         #     print(_)
                         #     total_loss += distributed_train_step(next(train_iter))
+                        distributed_train_step((state_batch[16,:],q_values[16,:]))
                         for x in dist_dataset:
                             total_loss += distributed_train_step(x)
                             num_batches += 1
