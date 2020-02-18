@@ -485,7 +485,7 @@ class Policy:
                 X = tf.data.Dataset.from_tensors(state_batch)
                 print("X:"+str(X))
                 y = tf.data.Dataset.from_tensors(q_values)
-                print("Y:"+srt(y))
+                print("Y:"+str(y))
                 dataset = tf.data.Dataset.zip((X,y))
                 print("Dataset:"+str(dataset))
                 batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
