@@ -483,10 +483,14 @@ class Policy:
                 print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
                 print(f"Number of replicas: {strategy.num_replicas_in_sync}")
                 X = tf.data.Dataset.from_tensors(state_batch)
+                print("X:"+str(X))
                 y = tf.data.Dataset.from_tensors(q_values)
+                print("Y:"+srt(y))
                 dataset = tf.data.Dataset.zip((X,y))
+                print("Dataset:"+str(dataset))
                 batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
                 batched_data =  batched_data.enumerate(start=0)
+                print("batched dataset:"+str(batched_data))
                 for x in batched_data.as_numpy_iterator():
                     print(x)
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
@@ -503,7 +507,7 @@ class Policy:
 
                     for epoch in range(2):
                         total_loss = 0.0
-                        num_batches = 0
+                        num_batches = 1
                         print("LLEGO A EL DATASET DISTRIBUIDO")
                         print(dist_dataset[0])
                         # train_iter = iter(dist_dataset)
