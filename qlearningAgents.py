@@ -322,7 +322,7 @@ with strategy.scope():
                 # grads = tape.gradient(loss, policy.model.trainable_variables)
                 # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
                 # return cross_entropy
-            print("Features: "+str(features))
+            # print("Features: "+str(features))
             with tf.GradientTape() as tape:
                 predictions = policy.model(features, training=True)
                 loss = compute_loss(labels, predictions)
