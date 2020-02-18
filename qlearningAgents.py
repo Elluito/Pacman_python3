@@ -494,7 +494,9 @@ class Policy:
                 print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
                 prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values))
                 print("Probando con from_tensor_slices:"+str(prob_dataset))
-                print("Batched prob_dataset:"+str(prob_dataset.batch(GLOBAL_BATCH_SIZE)))
+                batchd_prob = prob_dataset.batch(GLOBAL_BATCH_SIZE)
+                print("Batched prob_dataset:"+str(batchd_prob))
+                print("lista del slices batched:"+str(batchd_prob.as_numpy_iterator()))
 
 
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
@@ -520,7 +522,9 @@ class Policy:
                         #     print(_)
                         #     total_loss += distributed_train_step(next(train_iter))
                         distributed_train_step((state_batch,q_values))
-                        for x in dist_dataset:
+                        for i in range(8):
+                            x = np.random.sample(state_batch)
+                            y =
                             total_loss += distributed_train_step(x)
                             num_batches += 1
                         train_loss = total_loss / num_batches
