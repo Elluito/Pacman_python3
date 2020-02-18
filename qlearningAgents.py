@@ -297,7 +297,7 @@ class ReplayMemory(object):
         return len(self.memory)
 # @tf.function
 def train_step(inputs):
-        global policy
+        global policy, GLOBAL_BATCH_SIZE
         # print(policy)
         features,labels = inputs
 
@@ -310,7 +310,7 @@ def train_step(inputs):
 
                 per_example_loss=l(y_true=labels,y_pred=predictions)
 
-                return tf.nn.compute_average_loss(per_example_loss, global_batch_size=BATCH_SIZE)
+                return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
 
             # grads = tape.gradient(loss, policy.model.trainable_variables)
             # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
@@ -465,7 +465,8 @@ class Policy:
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
                 strategy = self.strategy
-                GLOBAL_BATCH_SIZE = 32* strategy.num_replicas_in_sync
+                global GLOBAL_BATCH_SIZE
+                GLOBAL_BATCH_SIZE = BATCH_SIZE/ strategy.num_replicas_in_sync
                 dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values)).batch(GLOBAL_BATCH_SIZE)
                 dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
                 global policy
