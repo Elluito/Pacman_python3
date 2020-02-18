@@ -322,6 +322,7 @@ with strategy.scope():
                 # grads = tape.gradient(loss, policy.model.trainable_variables)
                 # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
                 # return cross_entropy
+            print("Features: "+str(features))
             with tf.GradientTape() as tape:
                 predictions = policy.model(features, training=True)
                 loss = compute_loss(labels, predictions)
@@ -493,6 +494,8 @@ class Policy:
                 print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
                 prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values))
                 print("Probando con from_tensor_slices:"+str(prob_dataset))
+                print("Batched prob_dataset")
+
 
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
                 global policy
@@ -516,7 +519,7 @@ class Policy:
                         # for _ in range(5):
                         #     print(_)
                         #     total_loss += distributed_train_step(next(train_iter))
-                        distributed_train_step((state_batch[16,:],q_values[16,:]))
+                        distributed_train_step((state_batch,q_values))
                         for x in dist_dataset:
                             total_loss += distributed_train_step(x)
                             num_batches += 1
