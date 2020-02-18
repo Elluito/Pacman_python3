@@ -690,10 +690,12 @@ class QLearningAgent(ReinforcementAgent):
         # Pick Action
         features = dar_features(self.policy_second,state)
         shape = [1,-1]
+
         if self.policy_second.use_image:
-            shape = [1]
-            shape.extend(self.policy_second.state_space)
-            Q_actual =np.array(self.policy_second.model.predict_on_batch(features.reshape(shape)))
+            with strategy.scope():
+                shape = [1]
+                shape.extend(self.policy_second.state_space)
+                Q_actual =np.array(self.policy_second.model.predict_on_batch(features.reshape(shape)))
 
 
         else:
