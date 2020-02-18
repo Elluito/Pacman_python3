@@ -329,10 +329,6 @@ with strategy.scope():
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
             policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
-            print(f"Loss:"+str(loss))
-
-            # print(per_example_losses)
-            # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
             return loss
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
@@ -526,8 +522,7 @@ class Policy:
                         train_loss = total_loss / num_batches
                         template = ("Epoch "+str(epoch)+", Loss:"+str(train_loss))
                         print(template)
-                        # print(template.format(epoch + 1, train_loss))
-                    # self.model.fit(state_batch, q_values,batch_size=len(state_batch),epochs=20,verbose=0)
+
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
