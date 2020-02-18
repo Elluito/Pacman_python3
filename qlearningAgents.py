@@ -329,7 +329,7 @@ with strategy.scope():
 
             grads = tape.gradient(loss, policy.model.trainable_variables)
             policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
-
+            print(f"Loss: {loss.numpy():d}")
 
             # print(per_example_losses)
             # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
@@ -497,6 +497,8 @@ class Policy:
                 batchd_prob = prob_dataset.batch(GLOBAL_BATCH_SIZE)
                 print("Batched prob_dataset:"+str(batchd_prob))
                 print("lista del slices batched:"+str(batchd_prob.as_numpy_iterator()))
+                for  i in batchd_prob.as_numpy_iterator():
+                    print(i)
 
 
                 dist_dataset = strategy.experimental_distribute_dataset(batched_data)
@@ -531,7 +533,7 @@ class Policy:
                         train_loss = total_loss / num_batches
 
                         template = ("Epoch {}, Loss: {}, A")
-                        print(template.format(epoch + 1, train_loss))
+                        print(template.format(epoch + 1, train_loss.numpy()))
 
 
 
