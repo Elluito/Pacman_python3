@@ -295,37 +295,40 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-@tf.function
-def train_step(inputs):
-        global policy, GLOBAL_BATCH_SIZE
-        # print(policy)
-        features,labels = inputs
+global STRATEGY
 
-        l = tf.keras.losses.Huber(reduction=keras.losses.Reduction.NONE)
-        def compute_loss(labels,predictions):
+with STRATEGY.scope():
+    @tf.function
+    def train_step(inputs):
+            global policy, GLOBAL_BATCH_SIZE
+            # print(policy)
+            features,labels = inputs
 
-                # training=True is only needed if there are layers with different
-                # behavior during training versus inference (e.g. Dropout).
-                # logits = policy.model(features)
+            l = tf.keras.losses.Huber(reduction=keras.losses.Reduction.NONE)
+            def compute_loss(labels,predictions):
 
-                per_example_loss=l(y_true=labels,y_pred=predictions)
+                    # training=True is only needed if there are layers with different
+                    # behavior during training versus inference (e.g. Dropout).
+                    # logits = policy.model(features)
 
-                return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+                    per_example_loss=l(y_true=labels,y_pred=predictions)
 
-            # grads = tape.gradient(loss, policy.model.trainable_variables)
-            # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
-            # return cross_entropy
-        with tf.GradientTape() as tape:
-            predictions = policy.model(features, training=True)
-            loss = compute_loss(labels, predictions)
+                    return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
 
-        grads = tape.gradient(loss, policy.model.trainable_variables)
-        policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
+                # grads = tape.gradient(loss, policy.model.trainable_variables)
+                # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
+                # return cross_entropy
+            with tf.GradientTape() as tape:
+                predictions = policy.model(features, training=True)
+                loss = compute_loss(labels, predictions)
+
+            grads = tape.gradient(loss, policy.model.trainable_variables)
+            policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
 
 
-        # print(per_example_losses)
-        # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
-        return loss
+            # print(per_example_losses)
+            # mean_loss = policy.strategy.reduce(tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+            return loss
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
@@ -357,6 +360,8 @@ class Policy:
         self.escala = 255
         if self.use_image:
             self.strategy = tf.distribute.experimental.TPUStrategy(resolver)
+            global STRATEGY
+            STRATEGY = self.strategy
 
             with self.strategy.scope():
                 self.model = keras.Sequential([
