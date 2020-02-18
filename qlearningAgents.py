@@ -505,9 +505,9 @@ class Policy:
                         train_iter = iter(dist_dataset)
 
                         for _ in range(10):
-                            total_loss += distributed_train_step(dist_dataset)
-                        for x in dist_dataset:
-                            total_loss += distributed_train_step(x)
+                            total_loss += distributed_train_step(next(train_iter))
+                        # for x in dist_dataset:
+                        #     total_loss += distributed_train_step(x)
                             num_batches += 1
                         train_loss = total_loss / num_batches
 
@@ -608,6 +608,9 @@ class QLearningAgent(ReinforcementAgent):
         self.eps_start = EPS_START
         self.eps_end = EPS_END
         self.similarity_function = None
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        print('caller name QLEARNING AGENT:', calframe[1][3])
         if "transfer" in args.keys():
             print("ENTRE AL IF DEL TRASNFER")
             self.policy_first = Policy(width, height, 5,use_image=True,use_prior=False)
@@ -803,6 +806,9 @@ class PacmanQAgent(QLearningAgent):
         args['alpha'] = alpha
         args['numTraining'] = numTraining
         self.index = 0  # This is always Pacman
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        print('caller name PACMAN AGENT:', calframe[1][3])
         QLearningAgent.__init__(self, **args)
 
     def getAction(self, state):
