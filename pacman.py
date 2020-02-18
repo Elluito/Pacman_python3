@@ -614,7 +614,7 @@ def readCommand(argv):
             agentOpts["sim_function"] = options.similarity
         else:
             raise Exception(
-                "Se debe especificar una ruta de archivo a la función de similaridad cunado se pasa le parñametro \"transfer\"")
+                "Se debe especificar una ruta de archivo a la función de similaridad cunado se pasa le parametro \"transfer\"")
 
     pacman = pacmanType(**agentOpts)  # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
@@ -699,7 +699,7 @@ def loadAgent(pacman, nographics):
                 if nographics and modulename == 'keyboardAgents.py':
                     raise Exception('Using the keyboard requires graphics (not text display)')
                 return getattr(module, pacman)
-    print(pacman)
+
     raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
 
 

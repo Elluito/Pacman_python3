@@ -338,7 +338,7 @@ class Policy:
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
-        print("INICIE POLICY EST A VEZ")
+        print("INICIE POLICY ESTA VEZ")
         self.width = width
         self.height = height
 
@@ -492,7 +492,11 @@ class Policy:
                     for epoch in range(20):
                         total_loss = 0.0
                         num_batches = 0
-                        print("LLEGO AQUI")
+                        print("LLEGO A EL DATASET DISTRIBUIDO")
+                        train_iter = iter(dist_dataset)
+
+                        for _ in range(10):
+                            total_loss += distributed_train_step(next(train_iter))
                         for x in dist_dataset:
                             total_loss += distributed_train_step(x)
                             num_batches += 1
