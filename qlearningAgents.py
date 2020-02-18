@@ -362,12 +362,12 @@ class Policy:
         self.escala = 255
         if self.use_image:
 
+            #
+            # global strategy
+            #
+            self.strategy =strategy
 
-            global strategy
-
-            elf.strategy =strategy
-
-            with self.strategy.scope():
+            with strategy.scope():
                 self.model = keras.Sequential([
                     keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
                     keras.layers.BatchNormalization(),
@@ -382,7 +382,7 @@ class Policy:
                     keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(self.action_space, activation="linear")])
-                self.model.summary()
+
                 # if not use_prior:
 
                 self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
