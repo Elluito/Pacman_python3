@@ -463,7 +463,6 @@ class Policy:
                 next_state_values[non_final_mask] = np.max(np.array(self.model.predict_on_batch([non_final_next_states])),axis=1)
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
-                print(q_values)
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
                 strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
@@ -485,9 +484,9 @@ class Policy:
                         total_loss = 0.0
                         num_batches = 0
                         print("LLEGO AQUI")
-
-                        total_loss += distributed_train_step(dist_dataset)
-                        num_batches += 1
+                        for x in dist_dataset:
+                            total_loss += distributed_train_step(x)
+                            num_batches += 1
                         train_loss = total_loss / num_batches
 
                         template = ("Epoch {}, Loss: {}, A")
