@@ -693,7 +693,7 @@ class QLearningAgent(ReinforcementAgent):
         if self.policy_second.use_image:
             shape = [1]
             shape.extend(self.policy_second.state_space)
-            Q_actual =np.array(self.policy_second.model(features.reshape(shape)))
+            Q_actual =np.array(self.policy_second.model.predict(features.reshape(shape)))
 
 
         else:
