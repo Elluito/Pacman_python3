@@ -468,7 +468,7 @@ class Policy:
                 strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
                 GLOBAL_BATCH_SIZE = BATCH_SIZE/ strategy.num_replicas_in_sync
-                dataset = tf.data.Dataset.from_tensors((list(state_batch),list(q_values))).batch(GLOBAL_BATCH_SIZE)
+                dataset = tf.data.Dataset.from_tensors((list(state_batch),list(q_values)))
                 dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
                 global policy
                 policy = self
@@ -485,9 +485,9 @@ class Policy:
                         total_loss = 0.0
                         num_batches = 0
                         print("LLEGO AQUI")
-                        for x in dist_dataset:
-                            total_loss += distributed_train_step(x)
-                            num_batches += 1
+
+                        total_loss += distributed_train_step(dist_dataset)
+                        num_batches += 1
                         train_loss = total_loss / num_batches
 
                         template = ("Epoch {}, Loss: {}, A")
