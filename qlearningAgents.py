@@ -308,7 +308,7 @@ def train_step(inputs):
                 # behavior during training versus inference (e.g. Dropout).
                 # logits = policy.model(features)
 
-                per_example_loss=l(labels=labels,y_pred=predictions)
+                per_example_loss=l(y_true=labels,y_pred=predictions)
 
                 return tf.nn.compute_average_loss(per_example_loss, global_batch_size=BATCH_SIZE)
 
