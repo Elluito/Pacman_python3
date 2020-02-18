@@ -464,23 +464,25 @@ class Policy:
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                dataset = tf.data.Dataset.from_tensors((state_batch,q_values))
+                strategy = self.strategy
+                GLOBAL_BATCH_SIZE = 32* strategy.num_replicas_in_sync
+                dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values)).batch(GLOBAL_BATCH_SIZE)
                 dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
                 global policy
                 policy = self
+
                 with self.strategy.scope():
 
                     @tf.function
                     def distributed_train_step(dataset_inputs):
                         # tf.distribute.get_replica_context().merge_all()
-                        per_replica_losses = self.strategy.experimental_run_v2(train_step,
-                                                                          args=(dataset_inputs,))
-                        return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                                               axis=None)
+                        per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
+                        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=None)
 
                     for epoch in range(20):
                         total_loss = 0.0
                         num_batches = 0
+                        print("LLEGO AQUI")
                         for x in dist_dataset:
                             total_loss += distributed_train_step(x)
                             num_batches += 1
