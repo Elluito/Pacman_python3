@@ -504,7 +504,7 @@ class Policy:
                         print("LLEGO A EL DATASET DISTRIBUIDO")
                         train_iter = iter(dist_dataset)
 
-                        for _ in range(10):
+                        for _ in range(5):
                             total_loss += distributed_train_step(next(train_iter))
                         # for x in dist_dataset:
                         #     total_loss += distributed_train_step(x)
