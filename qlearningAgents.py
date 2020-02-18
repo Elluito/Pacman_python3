@@ -525,7 +525,7 @@ class Policy:
                         #     print(_)
                         #     total_loss += distributed_train_step(next(train_iter))
                         # distributed_train_step((state_batch,q_values))
-                        for x in batchd_prob:
+                        for x in batchd_prob.as_numpy_iterator():
                             # x = state_batch[indexes[i],:,:,:]
                             # y = q_values[indexes[i],:]
                             total_loss += distributed_train_step(x)
