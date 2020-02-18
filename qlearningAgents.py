@@ -300,7 +300,6 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-global strategy
 
 with strategy.scope():
     @tf.function
