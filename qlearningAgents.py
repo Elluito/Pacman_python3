@@ -467,7 +467,7 @@ class Policy:
                 strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
                 GLOBAL_BATCH_SIZE = BATCH_SIZE/ strategy.num_replicas_in_sync
-                dataset = tf.data.Dataset.from_tensor_from_slices((list(state_batch),list(q_values<))).batch(GLOBAL_BATCH_SIZE)
+                dataset = tf.data.Dataset.from_tensor_slices((list(state_batch),list(q_values))).batch(GLOBAL_BATCH_SIZE)
                 dist_dataset = self.strategy.experimental_distribute_dataset(dataset)
                 global policy
                 policy = self
