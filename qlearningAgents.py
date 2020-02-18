@@ -695,7 +695,7 @@ class QLearningAgent(ReinforcementAgent):
             with strategy.scope():
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
-                Q_actual =np.array(self.policy_second.model.predict_on_batch(features.reshape(shape)))
+                Q_actual =self.policy_second.model.predict(features.reshape(shape))
 
 
         else:
