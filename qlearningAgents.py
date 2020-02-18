@@ -498,16 +498,15 @@ class Policy:
                 policy = self
 
                 with strategy.scope():
-                    prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
-                    # print("Probando con from_tensor_slices:" + str(prob_dataset))
-                    batchd_prob = prob_dataset.batch(GLOBAL_BATCH_SIZE)
-
-
-                    dist_dataset = strategy.experimental_distribute_dataset(batchd_prob)
+                    # prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
+                    # # print("Probando con from_tensor_slices:" + str(prob_dataset))
+                    # batchd_prob = prob_dataset.batch(GLOBAL_BATCH_SIZE)
+                    #
+                    #
+                    # dist_dataset = strategy.experimental_distribute_dataset(batchd_prob)
 
                     @tf.function
                     def distributed_train_step(dataset_inputs):
-                        # tf.distribute.get_replica_context().merge_all()
                         per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
                         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=None)
 
@@ -516,16 +515,13 @@ class Policy:
                         num_batches = 1
                         print("LLEGO A EL DATASET DISTRIBUIDO")
 
-                        # train_iter = iter(dist_dataset)
-                        #
-                        # for _ in range(5):
-                        #     print(_)
-                        #     total_loss += distributed_train_step(next(train_iter))
-                        # distributed_train_step((state_batch,q_values))
+
+
+
                         for i in range(8):
                             x = state_batch[indexes[i],:,:,:]
                             y = q_values[indexes[i],:]
-                            total_loss += distributed_train_step((x))
+                            total_loss += distributed_train_step((x,y))
                             num_batches += 1
                         train_loss = total_loss / num_batches
                         template = ("Epoch "+str(epoch)+", Loss:"+str(train_loss))
