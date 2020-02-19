@@ -913,10 +913,7 @@ if __name__ == '__main__':
     t0 = time.time()
     ini = args["inicio"]
     fin = args["final"] + 1
-    for i in range(ini, fin):
-        args = readCommand(sys.argv[1:])
-        args["attemp"] = i
-        runGames(**args)
+    runGames(**args)
     tn = time.time()
     print(f"Tiempo total trasncurrido {(tn - t0) / (60 * 60):0.3f} h")
 

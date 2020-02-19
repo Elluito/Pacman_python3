@@ -330,6 +330,13 @@ with strategy.scope():
             grads = tape.gradient(loss, policy.model.trainable_variables)
             policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
             return loss
+    @tf.function
+    def darQ(policy,features):
+        features.reshape(shape)
+
+
+
+
 class Policy:
     __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
 
@@ -407,7 +414,8 @@ class Policy:
 
 
 
-        # Episode policy and reward history
+
+
 
     # @tf.function
     def func(self,y_true, y_pred):
@@ -477,17 +485,17 @@ class Policy:
                 # strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
                 GLOBAL_BATCH_SIZE = int(BATCH_SIZE/ strategy.num_replicas_in_sync)
-                print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
-                print(f"Number of replicas: {strategy.num_replicas_in_sync}")
-                X = tf.data.Dataset.from_tensors(state_batch)
-                print("X:"+str(X))
-                y = tf.data.Dataset.from_tensors(q_values)
-                print("Y:"+str(y))
-                dataset = tf.data.Dataset.zip((X,y))
-                print("Dataset:"+str(dataset))
-                batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
-                print("batched dataset:"+str(batched_data))
-                print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
+                # print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
+                # print(f"Number of replicas: {strategy.num_replicas_in_sync}")
+                # X = tf.data.Dataset.from_tensors(state_batch)
+                # print("X:"+str(X))
+                # y = tf.data.Dataset.from_tensors(q_values)
+                # print("Y:"+str(y))
+                # dataset = tf.data.Dataset.zip((X,y))
+                # print("Dataset:"+str(dataset))
+                # batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
+                # print("batched dataset:"+str(batched_data))
+                # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
 
                 indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
                 global policy
@@ -504,7 +512,7 @@ class Policy:
                     @tf.function
                     def distributed_train_step(dataset_inputs):
                         per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
-                        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=None)
+                        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=1)
 
                     for epoch in range(2):
                         total_loss = 0.0
@@ -675,7 +683,7 @@ class QLearningAgent(ReinforcementAgent):
 
     def set_start_time(self):
         self.episodeStartTime =time.time()
-    @tf.function
+
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
