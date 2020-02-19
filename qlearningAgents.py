@@ -411,7 +411,7 @@ class Policy:
             # if not use_prior:
 
                 self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
-                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=tf.contrib.tpu.CrossShardOptimizer(self.optimizer))
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=tf.tf.compat.v1.tpu.CrossShardOptimizer(self.optimizer))
             # self.model = tf.tpu.keras_to_tpu_model(self.model, strategy=strategy)
             self.model_action.set_weights(self.model.get_weights())
         else:
