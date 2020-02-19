@@ -487,9 +487,9 @@ class Policy:
                 next_state_values = np.zeros([BATCH_SIZE],dtype =float)
                 non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
                 non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
-                next_state_values[non_final_mask] = np.max(np.array(self.model.predict_on_batch([non_final_next_states])),axis=1)
+                next_state_values[non_final_mask] = np.max(np.array(self.model.predict([non_final_next_states])),axis=1)
                 q_update = (reward_batch+ self.gamma * next_state_values)
-                q_values = np.array(self.model.predict_on_batch([state_batch]))
+                q_values = np.array(self.model.predict([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
                 # strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
