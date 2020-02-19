@@ -29,7 +29,7 @@ from collections import namedtuple
 import pickle
 import  tensorboard as tb
 from segtree import SumSegmentTree, MinSegmentTree
-from pacman import GameState,return_startegy
+from pacman import GameState
 import inspect
 
 # gpus = tf.config.experimental.list_physical_devices('GPU')
