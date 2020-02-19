@@ -888,6 +888,7 @@ def crear_layout(dificulty):
     f.close()
 
 def return_startegy():
+    print("lllamaron strategy")
     return strategy
 
 if __name__ == '__main__':

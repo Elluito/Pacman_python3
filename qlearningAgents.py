@@ -48,7 +48,8 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 128
 strategy =return_startegy()
-
+print("esta es la estrategy")
+print(strategy)
 
 # global  strategy
 
