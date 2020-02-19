@@ -379,35 +379,35 @@ class Policy:
             # global strategy
             #
             self.strategy =strategy
-            self.model_action = self.model = keras.Sequential([
-                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
+            self.model_action = keras.Sequential([
+                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space,dtype=tf.float32),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
+                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False,dtype=tf.float32),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),use_bias=False),
+                    keras.layers.Conv2D(64, (3, 3),use_bias=False,dtype=tf.float32),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
                     keras.layers.Flatten(),
-                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
-                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
-                    keras.layers.Dense(self.action_space, activation="linear")])
+                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
+                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
+                    keras.layers.Dense(self.action_space, activation="linear",dtype=tf.float32)])
             with strategy.scope():
                 self.model = keras.Sequential([
-                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
+                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space,dtype=tf.float32),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
+                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False,dtype=tf.float32),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),use_bias=False),
+                    keras.layers.Conv2D(64, (3, 3),use_bias=False,dtype=tf.float32),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
                     keras.layers.Flatten(),
-                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
-                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
-                    keras.layers.Dense(self.action_space, activation="linear")])
+                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
+                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
+                    keras.layers.Dense(self.action_space, activation="linear",dtype=tf.float32)])
             # if not use_prior:
 
                 self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
