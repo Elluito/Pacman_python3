@@ -51,6 +51,8 @@ resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendan
 tf.config.experimental_connect_to_cluster(resolver)
 tf.tpu.experimental.initialize_tpu_system(resolver)
 strategy = tf.distribute.experimental.TPUStrategy(resolver)
+tf.logging.set_verbosity(tf.logging.INFO)
+
 # global  strategy
 
 def flatten(X):
@@ -375,8 +377,8 @@ class Policy:
             #
             self.strategy =strategy
 
-            with strategy.scope():
-                self.model = keras.Sequential([
+
+            self.model = keras.Sequential([
                     keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
@@ -390,11 +392,11 @@ class Policy:
                     keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
                     keras.layers.Dense(self.action_space, activation="linear")])
+            # if not use_prior:
 
-                # if not use_prior:
-
-                self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
-                # self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=op)
+            self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
+            self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=self.optimizer)
+            self.model = tf.contrib.tpu.keras_to_tpu_model(self.model, strategy=strategy)
 
         else:
             self.model = keras.Sequential([
@@ -408,15 +410,6 @@ class Policy:
 
 
         if load_name is not None: self.model = keras.models.load_model(load_name)
-
-
-
-
-
-
-
-
-
     # @tf.function
     def func(self,y_true, y_pred):
         errors = tf.pow(tf.reduce_sum(y_true- y_pred, axis=1), 2)
@@ -485,6 +478,7 @@ class Policy:
                 # strategy = self.strategy
                 global GLOBAL_BATCH_SIZE
                 GLOBAL_BATCH_SIZE = int(BATCH_SIZE/ strategy.num_replicas_in_sync)
+
                 # print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
                 # print(f"Number of replicas: {strategy.num_replicas_in_sync}")
                 # X = tf.data.Dataset.from_tensors(state_batch)
@@ -496,40 +490,39 @@ class Policy:
                 # batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
                 # print("batched dataset:"+str(batched_data))
                 # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
-
-                indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
-                global policy
-                policy = self
-
-                with strategy.scope():
-                    # prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
-                    # # print("Probando con from_tensor_slices:" + str(prob_dataset))
-                    # batchd_prob = prob_dataset.batch(GLOBAL_BATCH_SIZE)
-                    #
-                    #
-                    # dist_dataset = strategy.experimental_distribute_dataset(batchd_prob)
-
-                    @tf.function
-                    def distributed_train_step(dataset_inputs):
-                        per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
-                        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=1)
-
-                    for epoch in range(2):
-                        total_loss = 0.0
-                        num_batches = 1
-                        print("LLEGO A EL DATASET DISTRIBUIDO")
-
-
-
-
-                        for i in range(8):
-                            x = state_batch[indexes[i],:,:,:]
-                            y = q_values[indexes[i],:]
-                            total_loss += distributed_train_step((x,y))
-                            num_batches += 1
-                        train_loss = total_loss / num_batches
-                # template = ("Epoch "+str(epoch)+", Loss:"+str(train_loss))
-                # print(template)
+                history = self.mode.fit(state_batch,q_values,epochs=20,batch_size=GLOBAL_BATCH_SIZE)
+                print(history["histroy"])
+                # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
+                # global policy
+                # policy = self
+                #
+                # with strategy.scope():
+                #     # prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
+                #     # # print("Probando con from_tensor_slices:" + str(prob_dataset))
+                #     # batchd_prob = prob_dataset.batch(GLOBAL_BATCH_SIZE)
+                #     #
+                #     #
+                #     # dist_dataset = strategy.experimental_distribute_dataset(batchd_prob)
+                #
+                #     @tf.function
+                #     def distributed_train_step(dataset_inputs):
+                #         per_replica_losses = strategy.experimental_run_v2(train_step,args=(dataset_inputs,))
+                #         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,axis=1)
+                #
+                #     for epoch in range(2):
+                #         total_loss = 0.0
+                #         num_batches = 1
+                #         print("LLEGO A EL DATASET DISTRIBUIDO")
+                #
+                #
+                #
+                #
+                #         for i in range(8):
+                #             x = state_batch[indexes[i],:,:,:]
+                #             y = q_values[indexes[i],:]
+                #             total_loss += distributed_train_step((x,y))
+                #             num_batches += 1
+                #         train_loss = total_loss / num_batches
 
         else:
             if len(self.priority_memory) < BATCH_SIZE:
