@@ -29,7 +29,7 @@ from collections import namedtuple
 import pickle
 import  tensorboard as tb
 from segtree import SumSegmentTree, MinSegmentTree
-from pacman import GameState
+from pacman import GameState,return_startegy
 import inspect
 
 # gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -47,7 +47,7 @@ MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 128
-
+strategy =return_startegy()
 
 
 # global  strategy
