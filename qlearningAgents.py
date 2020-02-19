@@ -377,8 +377,8 @@ class Policy:
             #
             self.strategy =strategy
 
-
-            self.model = keras.Sequential([
+            with strategy.scope():
+                self.model = keras.Sequential([
                     keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
                     keras.layers.BatchNormalization(),
                     keras.layers.Activation("relu"),
@@ -394,9 +394,9 @@ class Policy:
                     keras.layers.Dense(self.action_space, activation="linear")])
             # if not use_prior:
 
-            self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
-            self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=self.optimizer)
-            self.model = tf.tpu.keras_to_tpu_model(self.model, strategy=strategy)
+                self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=self.optimizer)
+            # self.model = tf.tpu.keras_to_tpu_model(self.model, strategy=strategy)
 
         else:
             self.model = keras.Sequential([
