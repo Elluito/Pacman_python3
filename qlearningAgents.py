@@ -484,9 +484,9 @@ class Policy:
                 non_final_mask = np.nonzero(non_final_mask)[0]
                 non_final_next_states = [s for s in batch.next_state
                                          if not s.data._lose and not s.data._win]
-                next_state_values = np.zeros([BATCH_SIZE],dtype =float)
+                next_state_values = np.zeros([BATCH_SIZE],dtype =np.float32)
                 non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-                non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
+                non_final_next_states = np.array(non_final_next_states, dtype=np.float21).reshape(shape)
                 next_state_values[non_final_mask] = np.max(np.array(self.model.predict([non_final_next_states])),axis=1)
                 q_update = (reward_batch+ self.gamma * next_state_values)
                 q_values = np.array(self.model.predict([state_batch]))
