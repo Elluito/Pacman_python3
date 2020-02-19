@@ -340,7 +340,7 @@ with strategy.scope():
 
 
 class Policy:
-    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer')
+    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space','strategy','optimizer','model_action')
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
@@ -376,7 +376,20 @@ class Policy:
             # global strategy
             #
             self.strategy =strategy
-
+            self.model_action = self.model = keras.Sequential([
+                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.Activation("relu"),
+                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.Activation("relu"),
+                    keras.layers.Conv2D(64, (3, 3),use_bias=False),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.Activation("relu"),
+                    keras.layers.Flatten(),
+                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False),
+                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False),
+                    keras.layers.Dense(self.action_space, activation="linear")])
             with strategy.scope():
                 self.model = keras.Sequential([
                     keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space),
@@ -397,7 +410,7 @@ class Policy:
                 self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
                 self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=self.optimizer)
             # self.model = tf.tpu.keras_to_tpu_model(self.model, strategy=strategy)
-
+            self.model_action.set_weights(self.model.get_weights())
         else:
             self.model = keras.Sequential([
                 # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
@@ -696,12 +709,12 @@ class QLearningAgent(ReinforcementAgent):
             with strategy.scope():
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
-                Q_actual =self.policy_second.model.predict(features.reshape(shape))
+                Q_actual =self.policy_second.model_action.predict(features.reshape(shape))
 
 
         else:
 
-            Q_actual = self.policy_second.model.predict(np.array(features).reshape(1,-1))
+            Q_actual = self.policy_second.model_action.predict(np.array(features).reshape(1,-1))
 
 
         accion = None
