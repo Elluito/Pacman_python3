@@ -707,7 +707,7 @@ class QLearningAgent(ReinforcementAgent):
         shape = [1,-1]
 
         if self.policy_second.use_image:
-            with strategy.scope():
+
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
                 Q_actual =self.policy_second.model_action.predict(features.reshape(shape))
