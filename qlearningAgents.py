@@ -507,7 +507,7 @@ class Policy:
                 # print("batched dataset:"+str(batched_data))
                 # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
                 self.model_action.set_weights(self.model.get_weights())
-                history = self.model.fit(state_batch,q_values,epochs=20,batch_size=GLOBAL_BATCH_SIZE)
+                history = self.model.fit(state_batch,q_values,epochs=20,batch_size=BATCH_SIZE)
                 print(history["histroy"])
                 # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
                 # global policy
