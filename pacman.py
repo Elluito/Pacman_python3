@@ -887,9 +887,6 @@ def crear_layout(dificulty):
     f.write(s)
     f.close()
 
-def return_startegy():
-    print("lllamaron strategy")
-    return strategy
 
 if __name__ == '__main__':
     """
@@ -908,7 +905,6 @@ if __name__ == '__main__':
     tf.config.experimental_connect_to_cluster(resolver)
     tf.tpu.experimental.initialize_tpu_system(resolver)
     Strategy = tf.distribute.experimental.TPUStrategy(resolver)
-    global strategy
     strategy = Strategy
 
     args = readCommand(sys.argv[1:])

@@ -33,7 +33,12 @@ from pacman import GameState,return_startegy
 import inspect
 
 # gpus = tf.config.experimental.list_physical_devices('GPU')
-
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
+tf.config.experimental_connect_to_cluster(resolver)
+tf.tpu.experimental.initialize_tpu_system(resolver)
+Strategy = tf.distribute.experimental.TPUStrategy(resolver)
+global strategy
+strategy = Strategy
 NORTH = 'North'
 SOUTH = 'South'
 EAST = 'East'
