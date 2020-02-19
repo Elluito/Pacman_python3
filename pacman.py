@@ -892,7 +892,8 @@ def moving_average(a, n=3):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
-
+def return_startegy():
+    return strategy
 
 if __name__ == '__main__':
     """
@@ -907,6 +908,12 @@ if __name__ == '__main__':
     """
 
     # Get game components based on input
+    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
+    tf.config.experimental_connect_to_cluster(resolver)
+    tf.tpu.experimental.initialize_tpu_system(resolver)
+    Strategy = tf.distribute.experimental.TPUStrategy(resolver)
+    global strategy
+    strategy = Strategy
 
     args = readCommand(sys.argv[1:])
     crear_layout(args["difficulty"])

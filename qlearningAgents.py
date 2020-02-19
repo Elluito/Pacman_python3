@@ -47,10 +47,7 @@ MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 128
-resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
-tf.config.experimental_connect_to_cluster(resolver)
-tf.tpu.experimental.initialize_tpu_system(resolver)
-strategy = tf.distribute.experimental.TPUStrategy(resolver)
+
 
 
 # global  strategy
