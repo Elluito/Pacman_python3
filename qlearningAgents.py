@@ -52,7 +52,7 @@ BATCH_SIZE = 128
 # print(strategy)
 class FLAGS(object):
   use_tpu=True
-  tpu_name = "grpc://alfredoavendano"
+  tpu_name = "alfredoavendano"
   # Use a local temporary path for the `model_dir`
   model_dir = "gs://datos_pacman"
   # Number of training steps to run on the Cloud TPU before returning control.
