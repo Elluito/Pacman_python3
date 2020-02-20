@@ -743,7 +743,7 @@ class QLearningAgent(ReinforcementAgent):
             #     name = "modelo_imagen_25000_04_01_dif2_1577007228_attemp_2_gamma0.9"
             self.policy_first.load_Model("models/" + name + ".h5")
 
-            f = open(f"datos/"+args["sim_function"],"r+b")
+            f = open("datos/"+args["sim_function"],"r+b")
             # self.similarity_function = pickle.load(f)
             self.similarity_function = keras.models.load_model("datos/"+args["sim_function"])
             f.close()
@@ -822,7 +822,7 @@ class QLearningAgent(ReinforcementAgent):
 
         accion = None
 
-        assert len(self.memory) <= self.memory_length, f"La memoria tiene más de {self.memory_length:d} elementos"
+        assert len(self.memory) <= self.memory_length, "La memoria tiene más de {} elementos".format(self.memory_length)
         pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
         self.memory.append(pedazo)
         if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
@@ -833,7 +833,7 @@ class QLearningAgent(ReinforcementAgent):
                         guardar = elem
                     else:
                         guardar = np.append(guardar, elem)
-                filename = f"datos/piezas_task_{self.task:d}"
+                filename = "datos/piezas_task_{}".format(self.task)
                 with open(filename, 'a+b') as fp:
                     pickle.dump(guardar, fp)
                 self.num_datos += 1

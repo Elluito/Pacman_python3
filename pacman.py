@@ -740,12 +740,12 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # N2 es el numero de la tarea  actual sobre la cual hago la trasnferencia. Si es diferente de 0 significa que hicimos
     # trasnfer de lo contrario solo estamos corriendo un experimento sencillo
     if pacman.n2 != 0:
-        nombre_archivo = f"datos/prob_task_{pacman.task}_attempt_{attemp}_transfer_from_{pacman.n1}.txt"
-        NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif_{difficulty:d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}_transfer_from_{pacman.n1}"
+        nombre_archivo = "datos/prob_task_{}_attempt_{}_transfer_from_{}.txt".format(pacman.task,attemp,pacman.n1)
+        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,attemp,pacman.policy_second.gamma,pacman.n1)
 
     else:
-        NAME = "modelo_imagen_%i" % numGames + f"_0{int(pacman.eps_start * 10):d}_0{int(pacman.eps_end * 10):d}_dif_{difficulty:d}_{int(time.time()):d}_attemp_{attemp:d}_gamma{pacman.policy_second.gamma}"
-        nombre_archivo = f"datos/prob_task_{pacman.task}_attempt_{attemp}.txt"
+        NAME = "modelo_imagen_%i" % numGames + +"_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(time.time()),attemp,pacman.policy_second.gamma,pacman.n1)
+        nombre_archivo = "datos/prob_task_{}_attempt_{}.txt".format(pacman.task,attemp)
     open(nombre_archivo, "w").close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
@@ -912,6 +912,6 @@ if __name__ == '__main__':
     args["attemp"]= ini
     runGames(**args)
     tn = time.time()
-    print(f"Tiempo total trasncurrido {(tn - t0) / (60 * 60):0.3f} h")
+    print("Tiempo total trasncurrido {} h".format((tn - t0) / (60 * 60)))
 
 
