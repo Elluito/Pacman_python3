@@ -61,14 +61,13 @@ class FLAGS(object):
   num_shards = 8
 
 
-def predict_input_fn(params):
-  batch_size = params["batch_size"]
-  state_batch = params["features"]
-  prob_dataset = tf.data.Dataset.from_tensor_slices(state_batch)
+def predict_input_fn(features, batch_size):
 
-  batchd_prob = prob_dataset.batch(batch_size)
+    state_batch=features
+    prob_dataset = tf.data.Dataset.from_tensor_slices(state_batch)
+    batchd_prob = prob_dataset.batch(batch_size)
   # batchd_prob = batchd_prob.cache()
-  return batchd_prob
+    return batchd_prob
 if FLAGS.use_tpu:
     my_project_name = subprocess.check_output([
         'gcloud','config','get-value','project'])
@@ -148,10 +147,11 @@ def make_input_fn(state_batch,q_values):
             #         parser, batch_size=batch_size,
             #         num_parallel_batches=8,
             #         drop_remainder=True))
-            prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
+            features=dict(state_batch)
+            prob_dataset = tf.data.Dataset.from_tensor_slices((features, q_values))
 
             batchd_prob = prob_dataset.batch(batch_size,num_parallel_batches=8,drop_remainder=True)
-            batchd_prob =batchd_prob.cache()
+            # batchd_prob =batchd_prob.cache()
             return batchd_prob
 
         return input_fn
@@ -791,7 +791,7 @@ class QLearningAgent(ReinforcementAgent):
                 shape.extend(self.policy_second.state_space)
                 # input_fn=tf.compat.v1.estimator.inputs.numpy_input_fn(features.reshape(shape),shuffle=False)
                 params={'features':features.reshape(shape),'batch_size':16}
-                cosa=self.policy_second.model.predict(input_fn=lambda batch_size: predict_input_fn(params))
+                cosa=self.policy_second.model.predict(input_fn = predict_input_fn(params))
                 print(list(cosa))
                 for single_prediction in cosa:
                     Q_actual =single_prediction["Q_values"]
