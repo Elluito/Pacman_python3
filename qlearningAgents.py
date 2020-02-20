@@ -780,6 +780,7 @@ class QLearningAgent(ReinforcementAgent):
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
                 cosa=self.policy_second.model.predict(make_input_fn(features.reshape(shape), None))
+                print(cosa)
                 Q_actual =cosa["Q_values"]
 
 
