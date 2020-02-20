@@ -110,7 +110,7 @@ def model_fn(features,labels,mode,params):
         predictions = {
             'Q_values': q_values,
         }
-        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions,predict_batch_size=16)
+        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions)
     if mode== tf.estimator.ModeKeys.TRAIN:
 
         predictions = model(features)
@@ -467,7 +467,7 @@ class Policy:
             self.model= tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
                                                       config = my_tpu_run_config,
                                                       use_tpu=FLAGS.use_tpu,
-                                                      train_batch_size=16)
+                                                      train_batch_size=16,predict_batch_size=16)
 
 
 
