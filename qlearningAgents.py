@@ -110,7 +110,7 @@ def model_fn(features,labels,mode,params):
         predictions = {
             'Q_values': q_values,
         }
-        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions)
+        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions,predict_batch_size=16)
     if mode== tf.estimator.ModeKeys.TRAIN:
 
         predictions = model(features)
