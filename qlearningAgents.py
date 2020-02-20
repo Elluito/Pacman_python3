@@ -96,8 +96,15 @@ my_tpu_run_config = tf.compat.v1.estimator.tpu.RunConfig(
     master=master,
     evaluation_master=master,
     model_dir=FLAGS.model_dir,
-    session_config=tf.compat.v1.ConfigProto(
-        allow_soft_placement=True),
+    # session_config=tf.compat.v1.ConfigProto(
+    #     allow_soft_placement=True),
+    tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
+                                          FLAGS.num_shards))
+my_predict_config = tf.compat.v1.estimator.tpu.RunConfig(
+    master="",
+    model_dir=FLAGS.model_dir,
+    # session_config=tf.compat.v1.ConfigProto(
+    #     allow_soft_placement=True),
     tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
                                           FLAGS.num_shards))
 # global  strategy
@@ -482,7 +489,7 @@ class Policy:
                                                       use_tpu=FLAGS.use_tpu,
                                                       train_batch_size=16,predict_batch_size=16)
             self.model_action = tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
-                                                      config = my_tpu_run_config,
+                                                      config = my_predict_config,
                                                       use_tpu=False,train_batch_size=16,
                                                       predict_batch_size=16)
 
