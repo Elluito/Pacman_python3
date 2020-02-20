@@ -76,9 +76,7 @@ if FLAGS.use_tpu:
     # print("my zona"+str(my_zone))
     # print("my project",+str(my_project_name))
     tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
-            tpu=[FLAGS.tpu_name],
-            zone=my_zone,
-            project=my_project_name)
+            tpu=[FLAGS.tpu_name])
     print("llego anted de pedir el master")
     master = tpu_cluster_resolver.get_master()
 else:
