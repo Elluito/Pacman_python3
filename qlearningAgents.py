@@ -54,7 +54,7 @@ class FLAGS(object):
   use_tpu=True
   tpu_name = "alfredoavendano"
   # Use a local temporary path for the `model_dir`
-  model_dir = "gs://datos_pacman"
+  model_dir = "gs://datos_pacman/model_dir"
   # Number of training steps to run on the Cloud TPU before returning control.
   iterations = 30
   # A single Cloud TPU has 8 shards.
@@ -478,6 +478,10 @@ class Policy:
                                                       config = my_tpu_run_config,
                                                       use_tpu=FLAGS.use_tpu,
                                                       train_batch_size=16,predict_batch_size=16)
+            self.model_action = tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
+                                                      config = my_tpu_run_config,
+                                                      use_tpu=False,
+                                                      predict_batch_size=16)
 
 
 
