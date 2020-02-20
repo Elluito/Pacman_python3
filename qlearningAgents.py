@@ -466,7 +466,8 @@ class Policy:
 
             self.model= tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
                                                       config = my_tpu_run_config,
-                                                      use_tpu=FLAGS.use_tpu)
+                                                      use_tpu=FLAGS.use_tpu,
+                                                      train_batch_size=16)
 
 
 
