@@ -65,8 +65,8 @@ def make_predict_fn(features):
     def predict_input_fn(params):
         batch_size=params["batch_size"]
         print(features)
-        state_batch=features
-        prob_dataset = tf.data.Dataset.from_tensor_slices(state_batch)
+        state_batch=tf.cast(features,dtype=tf.float32)
+        prob_dataset = tf.data.Dataset.from_tensor_slices(list(state_batch))
         batchd_prob = prob_dataset.batch(batch_size)
   # batchd_prob = batchd_prob.cache()
         return batchd_prob
