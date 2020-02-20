@@ -60,7 +60,7 @@ BATCH_SIZE = 128
 # print(strategy)
 class FLAGS(object):
   use_tpu=True
-  tpu_name="alfrdoavendano"
+  tpu_name = "alfrdoavendano"
   # Use a local temporary path for the `model_dir`
   model_dir = "gs://datos_pacman"
   # Number of training steps to run on the Cloud TPU before returning control.
@@ -76,6 +76,7 @@ if FLAGS.use_tpu:
             tpu=[FLAGS.tpu_name],
             zone=my_zone,
             project=my_project_name)
+    print("llego anted de pedir el master")
     master = tpu_cluster_resolver.get_master()
 else:
     master = ''
