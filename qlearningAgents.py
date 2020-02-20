@@ -80,13 +80,13 @@ if FLAGS.use_tpu:
 else:
     master = ''
 
-my_tpu_run_config = tf.estimator.tpu.RunConfig(
+my_tpu_run_config = tf.compat.v1.estimator.tpu.RunConfig(
     master=master,
     evaluation_master=master,
     model_dir=FLAGS.model_dir,
     session_config=tf.ConfigProto(
         allow_soft_placement=True, log_device_placement=True),
-    tpu_config=tf.estimator.tpu.TPUConfig(FLAGS.iterations,
+    tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
                                           FLAGS.num_shards))
 # global  strategy
 def model_fn(features,labels,mode,params):
