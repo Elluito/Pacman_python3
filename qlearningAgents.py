@@ -463,15 +463,8 @@ class Policy:
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
-            my_tpu_run_config = tf.estimator.tpu.RunConfig(
-                master=master,
-                model_dir=FLAGS.model_dir,
-                session_config=tf.ConfigProto(
-                    allow_soft_placement=True, log_device_placement=True),
-                tpu_config=tf.estimator.tpu.TPUConfig(FLAGS.iterations,
-                                                      FLAGS.num_shards),
-            )
-            self.model= tf.estimator.tpu.TPUEstimator(model_fn=model_fn,
+
+            self.model= tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
                                                       config = my_tpu_run_config,
                                                       use_tpu=FLAGS.use_tpu)
 
