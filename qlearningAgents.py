@@ -67,7 +67,7 @@ def predict_input_fn(params):
   prob_dataset = tf.data.Dataset.from_tensor_slices(state_batch)
 
   batchd_prob = prob_dataset.batch(batch_size)
-  batchd_prob = batchd_prob.cache()
+  # batchd_prob = batchd_prob.cache()
   return batchd_prob
 if FLAGS.use_tpu:
     my_project_name = subprocess.check_output([
@@ -792,7 +792,7 @@ class QLearningAgent(ReinforcementAgent):
                 # input_fn=tf.compat.v1.estimator.inputs.numpy_input_fn(features.reshape(shape),shuffle=False)
                 params={'features':features,'batch_size':16}
                 cosa=self.policy_second.model.predict(predict_input_fn(params))
-                print(cosa)
+                print(list(cosa))
                 for single_prediction in cosa:
                     Q_actual =single_prediction["Q_values"]
                 print(Q_actual)
