@@ -150,7 +150,7 @@ def make_input_fn(state_batch,q_values):
             #         num_parallel_batches=8,
             #         drop_remainder=True))
             features=dict(state_batch)
-            prob_dataset = tf.data.Dataset.from_tensor_slices((features, q_values))
+            prob_dataset = tf.data.Dataset.from_tensor_slices((features, q_values),dtype=tf.float32)
 
             batchd_prob = prob_dataset.batch(batch_size,num_parallel_batches=8,drop_remainder=True)
             # batchd_prob =batchd_prob.cache()
@@ -344,7 +344,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             done_mask[i] = 1 if executing act_batch[i] resulted in
             the end of an episode and 0 otherwise.
         weights: np.array
-            Array of shape (batch_size,) and dtype np.float32
+            Array of shape (batch_size,) and dtype tf.float32
             denoting importance weight of each sampled transition
         idxes: np.array
             Array of shape (batch_size,) and dtype np.int32
@@ -468,7 +468,7 @@ class Policy:
 
         # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
-        # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
+        # self.pesos = np.ones(BATCH_SIZE, dtype=tf.float32)
 
 
 
@@ -547,7 +547,7 @@ class Policy:
             shape.extend(self.state_space)
             batch = Transition(*zip(*transitions))
             state_batch = batch.state
-            state_batch = np.array(state_batch, dtype=np.float32).reshape(shape )
+            state_batch = np.array(state_batch, dtype=tf.float32).reshape(shape )
             action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
             reward_batch = np.array(batch.reward)
             reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
@@ -560,9 +560,9 @@ class Policy:
             non_final_mask = np.nonzero(non_final_mask)[0]
             non_final_next_states = [s for s in batch.next_state
                                      if not s.data._lose and not s.data._win]
-            next_state_values = np.zeros([BATCH_SIZE],dtype =np.float32)
+            next_state_values = np.zeros([BATCH_SIZE],dtype =tf.float32)
             non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-            non_final_next_states = np.array(non_final_next_states, dtype=np.float32).reshape(shape)
+            non_final_next_states = np.array(non_final_next_states, dtype=tf.float32).reshape(shape)
             predict_1 =self.model.predict(make_predict_fn([non_final_next_states]))
             predict_2 =self.model.predict(make_predict_fn(features=[state_batch]))
             print(predict_1)
@@ -627,7 +627,7 @@ class Policy:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
             obs_batch, act_batch, rew_batch, next_obs_batch, not_done_mask, weights, indxes = self.priority_memory.sample(BATCH_SIZE,0.5)
-            self.pesos = np.array(weights,dtype=np.float32)
+            self.pesos = np.array(weights,dtype=tf.float32)
             non_final_mask = np.where(not_done_mask==0)[0]
             act_batch = np.array([list(range(len(act_batch))), act_batch]).transpose()
             next_state_values = np.zeros([BATCH_SIZE], dtype=float)
