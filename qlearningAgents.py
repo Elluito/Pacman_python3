@@ -12,17 +12,15 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-import inspect
 import pickle
-import random
 import subprocess
-import util
 from collections import namedtuple
 
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
+import util
 from game import *
 from learningAgents import ReinforcementAgent
 from pacman import GameState
@@ -72,8 +70,8 @@ if FLAGS.use_tpu:
     tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
             tpu=[FLAGS.tpu_name],
             zone = my_zone,
-            project = my_project_name,
-            credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
+            project = my_project_name)
+            # credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
     print("llego anted de pedir el master")
     master = tpu_cluster_resolver.get_master()
 else:
