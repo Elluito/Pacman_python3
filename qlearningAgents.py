@@ -31,14 +31,16 @@ import  tensorboard as tb
 from segtree import SumSegmentTree, MinSegmentTree
 from pacman import GameState
 import inspect
+import tempfile
+import subprocess
 
 # gpus = tf.config.experimental.list_physical_devices('GPU')
-resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
-tf.config.experimental_connect_to_cluster(resolver)
-tf.tpu.experimental.initialize_tpu_system(resolver)
-Strategy = tf.distribute.experimental.TPUStrategy(resolver)
-global strategy
-strategy = Strategy
+# resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
+# tf.config.experimental_connect_to_cluster(resolver)
+# tf.tpu.experimental.initialize_tpu_system(resolver)
+# Strategy = tf.distribute.experimental.TPUStrategy(resolver)
+# global strategy
+# strategy = Strategy
 NORTH = 'North'
 SOUTH = 'South'
 EAST = 'East'
@@ -53,10 +55,97 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 128
 
-print("esta es la estrategy")
-print(strategy)
 
+# print("esta es la estrategy")
+# print(strategy)
+class FLAGS(object):
+  use_tpu=True
+  tpu_name="alfrdoavendano"
+  # Use a local temporary path for the `model_dir`
+  model_dir = "gs://datos_pacman"
+  # Number of training steps to run on the Cloud TPU before returning control.
+  iterations = 30
+  # A single Cloud TPU has 8 shards.
+  num_shards = 8
+if FLAGS.use_tpu:
+    my_project_name = subprocess.check_output([
+        'gcloud','config','get-value','project'])
+    my_zone = subprocess.check_output([
+        'gcloud','config','get-value','compute/zone'])
+    tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
+            tpu=[FLAGS.tpu_name],
+            zone=my_zone,
+            project=my_project_name)
+    master = tpu_cluster_resolver.get_master()
+else:
+    master = ''
+
+my_tpu_run_config = tf.estimator.tpu.RunConfig(
+    master=master,
+    evaluation_master=master,
+    model_dir=FLAGS.model_dir,
+    session_config=tf.ConfigProto(
+        allow_soft_placement=True, log_device_placement=True),
+    tpu_config=tf.estimator.tpu.TPUConfig(FLAGS.iterations,
+                                          FLAGS.num_shards))
 # global  strategy
+def model_fn(features,labels,mode,params):
+    state_space,action_space = params
+    model=keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=state_space, dtype=tf.float32),
+        keras.layers.BatchNormalization(),
+        keras.layers.Activation("relu"),
+        keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
+        keras.layers.BatchNormalization(),
+        keras.layers.Activation("relu"),
+        keras.layers.Conv2D(64, (3, 3), use_bias=False, dtype=tf.float32),
+        keras.layers.BatchNormalization(),
+        keras.layers.Activation("relu"),
+        keras.layers.Flatten(),
+        keras.layers.Dense(7 * 7 * 64, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
+        keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
+        keras.layers.Dense(action_space, activation="linear", dtype=tf.float32)])
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        q_values = model(features,training=False)
+        predictions = {
+            'Q_values': q_values,
+        }
+        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions)
+    if mode== tf.estimator.ModeKeys.TRAIN:
+
+        predictions = model(features)
+        loss_object = keras.losses.Huber()
+        loss =loss_object(y_true=labels,y_pred=predictions)
+        learning_rate = tf.train.exponential_decay(
+            0.0002, tf.train.get_global_step(), 100, 0.96)
+        optimizer = tf.compat.v1.tpu.CrossShardOptimizer(tf.compat.v1.train.RMSPropOptimizer(learning_rate=learning_rate,momentum=0.01))
+
+        train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
+        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+
+def make_input_fn(state_batch,q_values):
+        """Returns an `input_fn` for train and eval."""
+
+        def input_fn(params):
+            """An input_fn to parse 28x28 images from filename using tf.data."""
+            batch_size = params["batch_size"]
+
+            # dataset = tf.contrib.data.TFRecordDataset(
+            #     filename, buffer_size=FLAGS.dataset_reader_buffer_size)
+            # dataset = dataset.repeat()
+            # dataset = dataset.apply(
+            #     tf.contrib.data.map_and_batch(
+            #         parser, batch_size=batch_size,
+            #         num_parallel_batches=8,
+            #         drop_remainder=True))
+            prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
+
+            batchd_prob = prob_dataset.batch(batch_size,num_parallel_batches=8,drop_remainder=True)
+            batchd_prob =batchd_prob.cache()
+            return batchd_prob
+
+        return input_fn
+
 
 def flatten(X):
     '''
@@ -104,11 +193,11 @@ def dar_features(policy,state:GameState):
         posicion_fantasma = state.getGhostPosition(1)
         temp = np.nonzero(np.array(state.getFood().data))
         if state.data._win:
-            posicion_comida = posición_pacman
+            posicion_comida = posicion_pacman
         else:
             posicion_comida = (int(temp[0]),int(temp[1]))
-        distancia_a_comida =np.linalg.norm(np.array(posición_pacman)-np.array(posicion_comida))
-        res =[distancia_a_comida]+list(posición_pacman)+list(posición_fantasma)
+        distancia_a_comida =np.linalg.norm(np.array(posicion_pacman)-np.array(posicion_comida))
+        res =[distancia_a_comida]+list(posicion_pacman)+list(posicion_fantasma)
         return res
     else:
         return  np.array(policy.mapeo_fn(str(state))).reshape(policy.height,policy.width,1)
@@ -306,40 +395,40 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
-with strategy.scope():
-    @tf.function
-    def train_step(inputs):
-            global policy, GLOBAL_BATCH_SIZE
-            # print(policy)
-            features,labels = inputs
-
-            l = tf.keras.losses.Huber(reduction=keras.losses.Reduction.NONE)
-            def compute_loss(labels,predictions):
-
-                    # training=True is only needed if there are layers with different
-                    # behavior during training versus inference (e.g. Dropout).
-                    # logits = policy.model(features)
-
-                    per_example_loss=l(y_true=labels,y_pred=predictions)
-
-                    return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
-
-                # grads = tape.gradient(loss, policy.model.trainable_variables)
-                # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
-                # return cross_entropy
-            # print("Features: "+str(features))
-            with tf.GradientTape() as tape:
-                predictions = policy.model(features, training=True)
-                loss = compute_loss(labels, predictions)
-
-            grads = tape.gradient(loss, policy.model.trainable_variables)
-            policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
-            return loss
-    @tf.function
-    def darQ(policy,features):
-        features.reshape(shape)
-
-
+# with strategy.scope():
+#     @tf.function
+#     def train_step(inputs):
+#             global policy, GLOBAL_BATCH_SIZE
+#             # print(policy)
+#             features,labels = inputs
+#
+#             l = tf.keras.losses.Huber(reduction=keras.losses.Reduction.NONE)
+#             def compute_loss(labels,predictions):
+#
+#                     # training=True is only needed if there are layers with different
+#                     # behavior during training versus inference (e.g. Dropout).
+#                     # logits = policy.model(features)
+#
+#                     per_example_loss=l(y_true=labels,y_pred=predictions)
+#
+#                     return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+#
+#                 # grads = tape.gradient(loss, policy.model.trainable_variables)
+#                 # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
+#                 # return cross_entropy
+#             # print("Features: "+str(features))
+#             with tf.GradientTape() as tape:
+#                 predictions = policy.model(features, training=True)
+#                 loss = compute_loss(labels, predictions)
+#
+#             grads = tape.gradient(loss, policy.model.trainable_variables)
+#             policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
+#             return loss
+#     # @tf.function
+#     # def darQ(policy,features):
+#     #     features.reshape(shape)
+#     #
+#
 
 
 class Policy:
@@ -374,46 +463,21 @@ class Policy:
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
+            my_tpu_run_config = tf.estimator.tpu.RunConfig(
+                master=master,
+                model_dir=FLAGS.model_dir,
+                session_config=tf.ConfigProto(
+                    allow_soft_placement=True, log_device_placement=True),
+                tpu_config=tf.estimator.tpu.TPUConfig(FLAGS.iterations,
+                                                      FLAGS.num_shards),
+            )
+            self.model= tf.estimator.tpu.TPUEstimator(model_fn=model_fn,
+                                                      config = my_tpu_run_config,
+                                                      use_tpu=FLAGS.use_tpu)
 
-            #
-            # global strategy
-            #
-            self.strategy =strategy
-            self.model_action = keras.Sequential([
-                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space,dtype=tf.float32),
-                    keras.layers.BatchNormalization(),
-                    keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False,dtype=tf.float32),
-                    keras.layers.BatchNormalization(),
-                    keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),use_bias=False,dtype=tf.float32),
-                    keras.layers.BatchNormalization(),
-                    keras.layers.Activation("relu"),
-                    keras.layers.Flatten(),
-                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
-                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
-                    keras.layers.Dense(self.action_space, activation="linear",dtype=tf.float32)])
-            with strategy.scope():
-                self.model = keras.Sequential([
-                    keras.layers.Conv2D(32, (3, 3),  input_shape=self.state_space,dtype=tf.float32),
-                    keras.layers.BatchNormalization(),
-                    keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),strides=[2,2],use_bias=False,dtype=tf.float32),
-                    keras.layers.BatchNormalization(),
-                    keras.layers.Activation("relu"),
-                    keras.layers.Conv2D(64, (3, 3),use_bias=False,dtype=tf.float32),
-                    keras.layers.BatchNormalization(),
-                    keras.layers.Activation("relu"),
-                    keras.layers.Flatten(),
-                    keras.layers.Dense(7*7*64, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
-                    keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False,dtype=tf.float32),
-                    keras.layers.Dense(self.action_space, activation="linear",dtype=tf.float32)])
-            # if not use_prior:
 
-                self.optimizer=keras.optimizers.RMSprop(learning_rate=0.0002,momentum=0.01)
-                self.model.compile(loss=tf.compat.v1.losses.huber_loss, optimizer=self.optimizer)
-            # self.model = tf.tpu.keras_to_tpu_model(self.model, strategy=strategy)
-            self.model_action.set_weights(self.model.get_weights())
+
+
         else:
             self.model = keras.Sequential([
                 # keras.layers.Dense(128, activation=tf.nn.tanh, use_bias=False, input_shape=(self.height * self.width,)),
@@ -457,62 +521,68 @@ class Policy:
         if not self.priority:
             # print(gpus)
 
-            # with self.strategy.scope():
-
-                if len(self.memory) < BATCH_SIZE:
-                            return
-
-                transitions = self.memory.sample(BATCH_SIZE)
-                # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
-                # detailed explanation). This converts batch-array of Transitions
-                # to Transition of batch-arrays.
-
-                shape = [-1]
-                shape.extend(self.state_space)
-                batch = Transition(*zip(*transitions))
-                state_batch = batch.state
-                state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
-                action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
-                reward_batch = np.array(batch.reward)
-                reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
 
 
-                # Compute a mask of non-final states and concatenate the batch elements
-                # (a final state would've been the one after which simulation ended)
-                non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
-                                          dtype=np.int)
-                non_final_mask = np.nonzero(non_final_mask)[0]
-                non_final_next_states = [s for s in batch.next_state
-                                         if not s.data._lose and not s.data._win]
-                next_state_values = np.zeros([BATCH_SIZE],dtype =np.float32)
-                non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-                non_final_next_states = np.array(non_final_next_states, dtype=np.float32).reshape(shape)
-                next_state_values[non_final_mask] = np.max(np.array(self.model.predict([non_final_next_states])),axis=1)
-                q_update = (reward_batch+ self.gamma * next_state_values)
-                q_values = np.array(self.model.predict([state_batch]))
-                q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                # strategy = self.strategy
-                global GLOBAL_BATCH_SIZE
-                GLOBAL_BATCH_SIZE = int(BATCH_SIZE/ strategy.num_replicas_in_sync)
+            if len(self.memory) < BATCH_SIZE:
+                        return
 
-                # print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
-                # print(f"Number of replicas: {strategy.num_replicas_in_sync}")
-                # X = tf.data.Dataset.from_tensors(state_batch)
-                # print("X:"+str(X))
-                # y = tf.data.Dataset.from_tensors(q_values)
-                # print("Y:"+str(y))
-                # dataset = tf.data.Dataset.zip((X,y))
-                # print("Dataset:"+str(dataset))
-                # batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
-                # print("batched dataset:"+str(batched_data))
-                # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
-                self.model_action.set_weights(self.model.get_weights())
-                history = self.model.fit(state_batch,q_values,epochs=20,batch_size=GLOBAL_BATCH_SIZE)
-                print(history["histroy"])
-                # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
-                # global policy
-                # policy = self
-                #
+            transitions = self.memory.sample(BATCH_SIZE)
+            # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+            # detailed explanation). This converts batch-array of Transitions
+            # to Transition of batch-arrays.
+
+            shape = [-1]
+            shape.extend(self.state_space)
+            batch = Transition(*zip(*transitions))
+            state_batch = batch.state
+            state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
+            action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
+            reward_batch = np.array(batch.reward)
+            reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
+
+
+            # Compute a mask of non-final states and concatenate the batch elements
+            # (a final state would've been the one after which simulation ended)
+            non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
+                                      dtype=np.int)
+            non_final_mask = np.nonzero(non_final_mask)[0]
+            non_final_next_states = [s for s in batch.next_state
+                                     if not s.data._lose and not s.data._win]
+            next_state_values = np.zeros([BATCH_SIZE],dtype =np.float32)
+            non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
+            non_final_next_states = np.array(non_final_next_states, dtype=np.float32).reshape(shape)
+            predict_1 =self.model.predict(make_input_fn([non_final_next_states],None))
+            predict_2 =self.model.predict(make_input_fn([state_batch],None))
+            print(predict_1)
+            print(predict_2)
+            next_state_values[non_final_mask] = np.max(np.array(predict_1["Q_values"]),axis=1)
+            q_update = (reward_batch+ self.gamma * next_state_values)
+            q_values = np.array(predict_2["Q_values"])
+            q_values[action_batch[:,0],action_batch[:,1]] = q_update
+            # strategy = self.strategy
+            global GLOBAL_BATCH_SIZE
+            GLOBAL_BATCH_SIZE = int(BATCH_SIZE/ 8)
+
+            # print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
+            # print(f"Number of replicas: {strategy.num_replicas_in_sync}")
+            # X = tf.data.Dataset.from_tensors(state_batch)
+            # print("X:"+str(X))
+            # y = tf.data.Dataset.from_tensors(q_values)
+            # print("Y:"+str(y))
+            # dataset = tf.data.Dataset.zip((X,y))
+            # print("Dataset:"+str(dataset))
+            # batched_data = dataset.batch(GLOBAL_BATCH_SIZE,drop_remainder=True)
+            # print("batched dataset:"+str(batched_data))
+            # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
+            # self.model_action.set_weights(self.model.get_weights())
+
+            self.model.train(input_fn=make_input_fn((state_batch,q_values)),
+                    max_steps=FLAGS.train_steps)
+            # print(history["histroy"])
+            # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
+            # global policy
+            # policy = self
+            #
                 # with strategy.scope():
                 #     # prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
                 #     # # print("Probando con from_tensor_slices:" + str(prob_dataset))
@@ -713,7 +783,8 @@ class QLearningAgent(ReinforcementAgent):
 
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
-                Q_actual =self.policy_second.model_action.predict(features.reshape(shape))
+                cosa=self.policy_second.model.predict(make_input_fn(features.reshape(shape), None))
+                Q_actual =cosa["Q_values"]
 
 
         else:
