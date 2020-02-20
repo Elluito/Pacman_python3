@@ -60,14 +60,16 @@ class FLAGS(object):
   # A single Cloud TPU has 8 shards.
   num_shards = 8
 
+def make_predict_fn(batch_size):
 
-def predict_input_fn(features, batch_size):
+    def predict_input_fn(features, batch_size):
 
-    state_batch=features
-    prob_dataset = tf.data.Dataset.from_tensor_slices(dict(state_batch))
-    batchd_prob = prob_dataset.batch(batch_size)
+        state_batch=features
+        prob_dataset = tf.data.Dataset.from_tensor_slices(dict(state_batch))
+        batchd_prob = prob_dataset.batch(batch_size)
   # batchd_prob = batchd_prob.cache()
-    return batchd_prob
+        return batchd_prob
+    return predict_input_fn
 if FLAGS.use_tpu:
     my_project_name = subprocess.check_output([
         'gcloud','config','get-value','project'])
