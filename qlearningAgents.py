@@ -493,10 +493,11 @@ class Policy:
         return loss
 
     def load_Model(self, load_name=None):
-        self.model = keras.models.load_model(load_name)
+        # self.model = keras.models.load_model(load_name)
 
 
     def saveModel(self, name):
+
         self.model.save('models/' + name + '.h5')
 
     def mapeo_fn(self, state):

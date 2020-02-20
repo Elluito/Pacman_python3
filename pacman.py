@@ -11,7 +11,7 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 import tensorflow as tf
-import inspect
+
 """
 Pacman.py holds the logic for the classic pacman game along with the main
 code to run a game.  This file is divided into three sections:
@@ -45,10 +45,8 @@ from game import Directions
 from game import Actions
 from util import nearestPoint
 from util import manhattanDistance
-import util
 import layout as Mlayout
-import sys, types, time, random, os
-from tensorflow import keras
+import sys, time, random, os
 
 #
 # global gpus
@@ -779,9 +777,9 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
 
         if i > numTraining and isinstance(pacman, PacmanQAgent):
             pacman.prueba = True
-        if i % 1000== 0 and not pacman.prueba:
-            if isinstance(pacman, PacmanQAgent):
-                pacman.policy_second.saveModel(NAME)
+        # if i % 1000== 0 and not pacman.prueba:
+        #     if isinstance(pacman, PacmanQAgent):
+        #         pacman.policy_second.saveModel(NAME)
 
         beQuiet = i <= numTraining
 
