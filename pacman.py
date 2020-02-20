@@ -10,7 +10,6 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-import tensorflow as tf
 
 """
 Pacman.py holds the logic for the classic pacman game along with the main
@@ -39,14 +38,18 @@ code to run a game.  This file is divided into three sections:
 To play your first game, type 'python pacman.py' from the command line.
 The keys are 'a', 's', 'd', and 'w' to move (or arrow keys).  Have fun!
 """
-from game import GameStateData
-from game import Game
-from game import Directions
-from game import Actions
-from util import nearestPoint
-from util import manhattanDistance
+import os
+import random
+import sys
+import time
+
 import layout as Mlayout
-import sys, time, random, os
+from game import Actions
+from game import Directions
+from game import Game
+from game import GameStateData
+from util import manhattanDistance
+from util import nearestPoint
 
 #
 # global gpus
@@ -899,11 +902,7 @@ if __name__ == '__main__':
     """
 
     # Get game components based on input
-    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
-    tf.config.experimental_connect_to_cluster(resolver)
-    tf.tpu.experimental.initialize_tpu_system(resolver)
-    Strategy = tf.distribute.experimental.TPUStrategy(resolver)
-    strategy = Strategy
+
 
     args = readCommand(sys.argv[1:])
     crear_layout(args["difficulty"])

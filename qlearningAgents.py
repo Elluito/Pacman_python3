@@ -67,7 +67,9 @@ def make_predict_fn(features):
         state_batch=features
         prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch))
         batchd_prob = prob_dataset.batch(batch_size)
+        print("\n\n\n\n")
         print(batchd_prob)
+        print("\n\n\n")
         return batchd_prob
     return predict_input_fn
 if FLAGS.use_tpu:
@@ -109,8 +111,8 @@ my_predict_config = tf.compat.v1.estimator.tpu.RunConfig(
                                           FLAGS.num_shards))
 # global  strategy
 def model_fn(features,labels,mode,params):
-    state_space,action_space = params
-    model=keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=state_space, dtype=tf.float32),
+    # state_space,action_space = param
+    model=keras.Sequential([keras.laye00rs.Conv2D(32, (3, 3), input_shape=(), dtype=tf.float32),
         keras.layers.BatchNormalization(),
         keras.layers.Activation("relu"),
         keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
@@ -122,7 +124,7 @@ def model_fn(features,labels,mode,params):
         keras.layers.Flatten(),
         keras.layers.Dense(7 * 7 * 64, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
         keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
-        keras.layers.Dense(action_space, activation="linear", dtype=tf.float32)])
+        keras.layers.Dense(5, activation="linear", dtype=tf.float32)])
 
     if mode == tf.estimator.ModeKeys.PREDICT:
         q_values = model(features,training=False)
