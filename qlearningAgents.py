@@ -60,12 +60,12 @@ class FLAGS(object):
   # A single Cloud TPU has 8 shards.
   num_shards = 8
 
-def make_predict_fn(batch_size):
+def make_predict_fn(features):
 
-    def predict_input_fn(features, batch_size):
-
+    def predict_input_fn(params):
+        batch_size=params["batch_size"]
         state_batch=features
-        prob_dataset = tf.data.Dataset.from_tensor_slices(dict(state_batch))
+        prob_dataset = tf.data.Dataset.from_tensor_slices(state_batch)
         batchd_prob = prob_dataset.batch(batch_size)
   # batchd_prob = batchd_prob.cache()
         return batchd_prob
