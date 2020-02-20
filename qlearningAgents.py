@@ -123,7 +123,7 @@ def model_fn(features,labels,mode,params):
         return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions)
     if mode== tf.estimator.ModeKeys.TRAIN:
 
-        predictions = model(features)
+        predictions = model(features,training=True)
         loss_object = keras.losses.Huber()
         loss =loss_object(y_true=labels,y_pred=predictions)
         learning_rate = tf.train.exponential_decay(
