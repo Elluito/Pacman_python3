@@ -59,6 +59,16 @@ class FLAGS(object):
   iterations = 30
   # A single Cloud TPU has 8 shards.
   num_shards = 8
+
+
+def predict_input_fn(params):
+  batch_size = params["batch_size"]
+  state_batch = params["features"]
+  prob_dataset = tf.data.Dataset.from_tensor_slices(state_batch)
+
+  batchd_prob = prob_dataset.batch(batch_size)
+  batchd_prob = batchd_prob.cache()
+  return batchd_prob
 if FLAGS.use_tpu:
     my_project_name = subprocess.check_output([
         'gcloud','config','get-value','project'])
@@ -548,7 +558,7 @@ class Policy:
             non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
             non_final_next_states = np.array(non_final_next_states, dtype=np.float32).reshape(shape)
             predict_1 =self.model.predict(make_input_fn([non_final_next_states],None))
-            predict_2 =self.model.predict(make_input_fn([state_batch],None))
+            predict_2 =self.model.predict(predict_input_fn(features=[state_batch],batch_size=16))
             print(predict_1)
             print(predict_2)
             next_state_values[non_final_mask] = np.max(np.array(predict_1["Q_values"]),axis=1)
@@ -780,7 +790,7 @@ class QLearningAgent(ReinforcementAgent):
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
                 # input_fn=tf.compat.v1.estimator.inputs.numpy_input_fn(features.reshape(shape),shuffle=False)
-                cosa=self.policy_second.model.predict(make_input_fn(features,None))
+                cosa=self.policy_second.model.predict(predict_input_fn(features=features,batch_size=16))
                 print(cosa)
                 for single_prediction in cosa:
                     Q_actual =single_prediction["Q_values"]
