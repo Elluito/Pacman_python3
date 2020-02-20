@@ -779,8 +779,8 @@ class QLearningAgent(ReinforcementAgent):
 
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
-                input_fn=tf.compat.v1.estimator.inputs.numpy_input_fn(features.reshape(shape),shuffle=False)
-                cosa=self.policy_second.model.predict(input_fn)
+                # input_fn=tf.compat.v1.estimator.inputs.numpy_input_fn(features.reshape(shape),shuffle=False)
+                cosa=self.policy_second.model.predict(make_input_fn(features,None))
                 print(cosa)
                 for single_prediction in cosa:
                     Q_actual =single_prediction["Q_values"]
