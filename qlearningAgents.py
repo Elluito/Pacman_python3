@@ -12,27 +12,21 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-from game import *
-from learningAgents import ReinforcementAgent
-from featureExtractors import *
+import inspect
+import pickle
+import random
+import subprocess
+import util
+from collections import namedtuple
+
 import numpy as np
-from copy import deepcopy as dpc
-import matplotlib.pyplot as plt
-import random as rnd
-import pdb
 import tensorflow as tf
 from tensorflow import keras
 
-import random, util, math
-from collections import namedtuple
-
-import pickle
-import  tensorboard as tb
-from segtree import SumSegmentTree, MinSegmentTree
+from game import *
+from learningAgents import ReinforcementAgent
 from pacman import GameState
-import inspect
-import tempfile
-import subprocess
+from segtree import SumSegmentTree, MinSegmentTree
 
 # gpus = tf.config.experimental.list_physical_devices('GPU')
 # resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
@@ -77,8 +71,9 @@ if FLAGS.use_tpu:
     # print("my project",+str(my_project_name))
     tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
             tpu=[FLAGS.tpu_name],
-            zone=my_zone,
-            project=my_project_name)
+            zone = my_zone,
+            project = my_project_name,
+            credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
     print("llego anted de pedir el master")
     master = tpu_cluster_resolver.get_master()
 else:
