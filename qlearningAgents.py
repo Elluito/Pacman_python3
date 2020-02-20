@@ -69,6 +69,9 @@ if FLAGS.use_tpu:
     # print("my project",+str(my_project_name))
     tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
             tpu=FLAGS.tpu_name)
+    tf.config.experimental_connect_to_cluster(tpu_cluster_resolver)
+    tf.tpu.experimental.initialize_tpu_system(tpu_cluster_resolver)
+
             # zone = my_zone,
             # project = my_project_name)
             # credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
