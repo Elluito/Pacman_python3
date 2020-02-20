@@ -52,7 +52,7 @@ BATCH_SIZE = 128
 # print(strategy)
 class FLAGS(object):
   use_tpu=True
-  tpu_name = "alfredoavendano"
+  tpu_name = "grpc://alfredoavendano"
   # Use a local temporary path for the `model_dir`
   model_dir = "gs://datos_pacman"
   # Number of training steps to run on the Cloud TPU before returning control.
@@ -68,9 +68,9 @@ if FLAGS.use_tpu:
     # print("my zona"+str(my_zone))
     # print("my project",+str(my_project_name))
     tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
-            tpu=[FLAGS.tpu_name],
-            zone = my_zone,
-            project = my_project_name)
+            tpu=FLAGS.tpu_name)
+            # zone = my_zone,
+            # project = my_project_name)
             # credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
     print("llego anted de pedir el master")
     master = tpu_cluster_resolver.get_master()
