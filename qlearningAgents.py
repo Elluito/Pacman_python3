@@ -88,6 +88,7 @@ if FLAGS.use_tpu:
             # credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
     print("llego anted de pedir el master")
     master = tpu_cluster_resolver.get_master()
+    print(master)
 else:
     master = ''
 
@@ -481,8 +482,8 @@ class Policy:
                                                       use_tpu=FLAGS.use_tpu,
                                                       train_batch_size=16,predict_batch_size=16)
             self.model_action = tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
-                                                      config = my_tpu_run_config,
-                                                      use_tpu=False,
+                                                      # config = my_tpu_run_config,
+                                                      use_tpu=False,train_batch_size=16,
                                                       predict_batch_size=16)
 
 
