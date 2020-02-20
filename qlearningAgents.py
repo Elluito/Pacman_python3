@@ -84,7 +84,7 @@ my_tpu_run_config = tf.compat.v1.estimator.tpu.RunConfig(
     master=master,
     evaluation_master=master,
     model_dir=FLAGS.model_dir,
-    session_config=tf.ConfigProto(
+    session_config=tf.compat.v1.ConfigProto(
         allow_soft_placement=True, log_device_placement=True),
     tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
                                           FLAGS.num_shards))
