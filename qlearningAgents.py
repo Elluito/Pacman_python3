@@ -13,14 +13,13 @@
 
 
 import pickle
-import random
-import util
 from collections import namedtuple
 
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
+import util
 from game import *
 from learningAgents import ReinforcementAgent
 from pacman import GameState
@@ -518,6 +517,7 @@ class QLearningAgent(ReinforcementAgent):
         self.num_trans = 0
         self.lastReward= 0
         self.n2 = 0
+        self.n1 = 0
         self.eps_start = EPS_START
         self.eps_end = EPS_END
         self.similarity_function = None
