@@ -729,7 +729,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # tf.reset_default_graph()
     # graph = tf.get_default_graph()
     # gpflow.reset_default_session(graph=graph)
-
+    open("log_salida_corrida_{}".format(attemp),"w").close()
     __main__.__dict__['_display'] = display
 
     rules = ClassicGameRules(timeout)
@@ -831,10 +831,12 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True) / float(len(wins))
-        print('Average Score:', sum(scores) / float(len(scores)))
-        print('Scores:       ', ', '.join([str(score) for score in scores]))
-        print('Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate))
-        print('Record:       ', ', '.join([['Loss', 'Win'][int(w)] for w in wins]))
+        f=open("log_salida_corrida_{}".format(attemp),"w")
+        f.write('\nAverage Score:', sum(scores) / float(len(scores)))
+        f.write('\nScores:       ', ', '.join([str(score) for score in scores]))
+        f.write('\nWin Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate))
+        f.write('\nRecord:       ', ', '.join([['Loss', 'Win'][int(w)] for w in wins]))
+        f.close()
 
     return games
 
