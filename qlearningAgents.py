@@ -12,24 +12,19 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-from game import *
-from learningAgents import ReinforcementAgent
-from featureExtractors import *
+import pickle
+import random
+import util
+from collections import namedtuple
+
 import numpy as np
-from copy import deepcopy as dpc
-import matplotlib.pyplot as plt
-import random as rnd
-import pdb
 import tensorflow as tf
 from tensorflow import keras
 
-import random, util, math
-from collections import namedtuple
-
-import pickle
-import  tensorboard as tb
-from segtree import SumSegmentTree, MinSegmentTree
+from game import *
+from learningAgents import ReinforcementAgent
 from pacman import GameState
+from segtree import SumSegmentTree, MinSegmentTree
 
 global gpus
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -41,7 +36,8 @@ WEST = 'West'
 STOP = 'Stop'
 EPS_START = 0.4
 EPS_END = 0.1
-EPS_DECAY = 0.999970043
+EPS_DECAY = 0.999965
+PHI_DECAY = 0.999970043
 HEIGTH = 19
 MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
@@ -659,10 +655,10 @@ class QLearningAgent(ReinforcementAgent):
         # util.raiseNotDefined()
 
         if not self.prueba:
-                a =(EPS_END-EPS_START)/self.num_episodes
-                eps_threshold = EPS_START + a * (self.episodesSoFar)
+                # a =(EPS_END-EPS_START)/self.num_episodes
+                eps_threshold = EPS_START*(EPS_DECAY)**self.episodesSoFar
                 self.epsilon = eps_threshold
-                self.phi = self.phi*EPS_DECAY
+                self.phi = self.phi*PHI_DECAY
                 self.n +=1
 
 
