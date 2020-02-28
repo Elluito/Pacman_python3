@@ -807,7 +807,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
 
         with open(nombre_archivo, "a") as f:
             f.write(str(int(game.state.isWin())) + "\n")
-        with open(nombre_archivo,"a") as f:
+        with open(nombre_archivo_score,"a") as f:
             f.write(str(r)+ "\n")
 
 
