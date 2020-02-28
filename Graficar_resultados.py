@@ -1,9 +1,10 @@
-import numpy as np
-from  scipy.signal import savgol_filter
+import glob
 import os
 import sys
-import glob
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 def smooth(scalars, weight):  # Weight between 0 and 1
     last = scalars[0]  # First value in the plot (first timestep)
@@ -48,7 +49,7 @@ def readCommand(argv):
 
 
 def graficar_todos_juntos(max_number):
-    names= ["Tarea_1","T0-T1 AUTOENCODER_0"]
+    names= ["T2 exponencial","T1-T2 lineal"]
     all_datos = []
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
@@ -67,8 +68,8 @@ def graficar_todos_juntos(max_number):
     for i,prom in enumerate(all_datos):
         x = np.linspace(0, len(prom) * 10, len(prom))
         plt.plot(x,  smooth(prom,0),label=names[i])
-    plt.xlabel("Episodios transcurridos")
-    plt.ylabel("Probabilidad  de ganar")
+    plt.xlabel("Episodes")
+    plt.ylabel("Winning probability")
     plt.legend()
 
     plt.show()

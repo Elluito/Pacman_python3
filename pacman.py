@@ -723,7 +723,6 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
              catchExceptions=False,
              timeout=30, difficulty=0):
     import __main__
-    import numpy as np
     import time
     # import gpflow
     # tf.reset_default_graph()
@@ -739,12 +738,16 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # trasnfer de lo contrario solo estamos corriendo un experimento sencillo
     if pacman.n2 != 0:
         nombre_archivo = "datos/prob_task_{}_attempt_{}_transfer_from_{}.txt".format(pacman.task,attemp,pacman.n1)
+        nombre_archivo_score="datos/score_task_{}_attempt_{}_transfer_from_{}.txt".format(pacman.task,attemp,pacman.n1)
         NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,attemp,pacman.policy_second.gamma,pacman.n1)
 
     else:
         NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(time.time()),attemp,pacman.policy_second.gamma,pacman.n1)
         nombre_archivo = "datos/prob_task_{}_attempt_{}.txt".format(pacman.task,attemp)
+        nombre_archivo_score = "datos/score_task_{}_attempt_{}.txt".format(pacman.task, attemp,
+                                                                                            pacman.n1)
     open(nombre_archivo, "w").close()
+    open(nombre_archivo_score, "w").close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
         pacman.num_episodes = numGames
@@ -801,19 +804,21 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         r, e = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)
-        score_prom += 1 / (n + 1) * (r - score_prom)
 
-        prob.append(int(game.state.isWin()))
-        n += 1
+        with open(nombre_archivo, "a") as f:
+            f.write(str(int(game.state.isWin())) + "\n")
+        with open(nombre_archivo,"a") as f:
+            f.write(str(r)+ "\n")
 
-        if i % 10 == 0 and not pacman.prueba:
-            p = np.mean(prob)
-            with open(nombre_archivo, "a") as f:
-                f.write(str(p) + "\n")
 
-            prob = []
-            score_prom = 0
-            n = 0
+        # if i % 10 == 0 and not pacman.prueba:
+        #     p = np.mean(prob)
+        #     with open(nombre_archivo, "a") as f:
+        #         f.write(str(p) + "\n")
+        #
+        #     prob = []
+        #     score_prom = 0
+        #     n = 0
 
         if not beQuiet: games.append(game)
 
