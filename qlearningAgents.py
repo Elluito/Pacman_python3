@@ -13,7 +13,6 @@
 
 
 import pickle
-import subprocess
 from collections import namedtuple
 
 import numpy as np
@@ -46,123 +45,153 @@ MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 BATCH_SIZE = 128
+TPU_WORKER = 'grpc://10.240.1.2:8470'
+PATH_TO_WEIGTHS = "models/weights.h5"
 
-
+resolver = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)
+tf.contrib.distribute.initialize_tpu_system(resolver)
+strategy = tf.contrib.distribute.TPUStrategy(resolver)
 # print("esta es la estrategy")
 # print(strategy)
-class FLAGS(object):
-  use_tpu=True
-  tpu_name = "alfredoavendano"
-  # Use a local temporary path for the `model_dir`
-  model_dir = "gs://datos_pacman/model_dir"
-  # Number of training steps to run on the Cloud TPU before returning control.
-  iterations = 30
-  # A single Cloud TPU has 8 shards.
-  num_shards = 8
-
-def make_predict_fn(features):
-
-    def predict_input_fn(params):
-        batch_size=params["batch_size"]
-        state_batch=features
-        prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch))
-        batchd_prob = prob_dataset.batch(batch_size)
-        print("\n\n\n\n")
-        print(batchd_prob)
-        print("\n\n\n")
-        return batchd_prob
-    return predict_input_fn
-if FLAGS.use_tpu:
-    my_project_name = subprocess.check_output([
-        'gcloud','config','get-value','project'])
-    my_zone = subprocess.check_output([
-        'gcloud','config','get-value','compute/zone'])
-
-    # print("my zona"+str(my_zone))
-    # print("my project",+str(my_project_name))
-    tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
-            tpu=FLAGS.tpu_name)
-    tf.config.experimental_connect_to_cluster(tpu_cluster_resolver)
-    tf.tpu.experimental.initialize_tpu_system(tpu_cluster_resolver)
-
-            # zone = my_zone,
-            # project = my_project_name)
-            # credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
-    print("llego anted de pedir el master")
-    master = tpu_cluster_resolver.get_master()
-    print(master)
-else:
-    master = ''
-
-my_tpu_run_config = tf.compat.v1.estimator.tpu.RunConfig(
-    master=master,
-    evaluation_master=master,
-    model_dir=FLAGS.model_dir,
-    # session_config=tf.compat.v1.ConfigProto(
-    #     allow_soft_placement=True),
-    tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
-                                          FLAGS.num_shards))
-my_predict_config = tf.compat.v1.estimator.tpu.RunConfig(
-    master="",
-    model_dir=FLAGS.model_dir,
-    # session_config=tf.compat.v1.ConfigProto(
-    #     allow_soft_placement=True),
-    tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
-                                          FLAGS.num_shards))
+# class FLAGS(object):
+#   use_tpu=True
+#   tpu_name = "alfredoavendano"
+#   # Use a local temporary path for the `model_dir`
+#   model_dir = "gs://datos_pacman/model_dir"
+#   # Number of training steps to run on the Cloud TPU before returning control.
+#   iterations = 30
+#   # A single Cloud TPU has 8 shards.
+#   num_shards = 8
+#
+# def make_predict_fn(features):
+#
+#     def predict_input_fn(params):
+#         batch_size=params["batch_size"]
+#         state_batch=features
+#         prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch))
+#         batchd_prob = prob_dataset.batch(batch_size)
+#         print("\n\n\n\n")
+#         print(batchd_prob)
+#         print("\n\n\n")
+#         return batchd_prob
+#     return predict_input_fn
+# if FLAGS.use_tpu:
+#     my_project_name = subprocess.check_output([
+#         'gcloud','config','get-value','project'])
+#     my_zone = subprocess.check_output([
+#         'gcloud','config','get-value','compute/zone'])
+#
+#     # print("my zona"+str(my_zone))
+#     # print("my project",+str(my_project_name))
+#     tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
+#             tpu=FLAGS.tpu_name)
+#     tf.config.experimental_connect_to_cluster(tpu_cluster_resolver)
+#     tf.tpu.experimental.initialize_tpu_system(tpu_cluster_resolver)
+#
+#             # zone = my_zone,
+#             # project = my_project_name)
+#             # credentials = "/home/alfredoavendano/pacman-268204-0871e8998067.json")
+#     print("llego anted de pedir el master")
+#     master = tpu_cluster_resolver.get_master()
+#     print(master)
+# else:
+#     master = ''
+#
+# my_tpu_run_config = tf.compat.v1.estimator.tpu.RunConfig(
+#     master=master,
+#     evaluation_master=master,
+#     model_dir=FLAGS.model_dir,
+#     # session_config=tf.compat.v1.ConfigProto(
+#     #     allow_soft_placement=True),
+#     tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
+#                                           FLAGS.num_shards))
+# my_predict_config = tf.compat.v1.estimator.tpu.RunConfig(
+#     master="",
+#     model_dir=FLAGS.model_dir,
+#     # session_config=tf.compat.v1.ConfigProto(
+#     #     allow_soft_placement=True),
+#     tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(FLAGS.iterations,
+#                                           FLAGS.num_shards))
 # global  strategy
-def model_fn(features,labels,mode,params):
-    # state_space,action_space = param
-    model=keras.Sequential([keras.laye00rs.Conv2D(32, (3, 3), input_shape=(), dtype=tf.float32),
-        keras.layers.BatchNormalization(),
-        keras.layers.Activation("relu"),
-        keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
-        keras.layers.BatchNormalization(),
-        keras.layers.Activation("relu"),
-        keras.layers.Conv2D(64, (3, 3), use_bias=False, dtype=tf.float32),
-        keras.layers.BatchNormalization(),
-        keras.layers.Activation("relu"),
-        keras.layers.Flatten(),
-        keras.layers.Dense(7 * 7 * 64, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
-        keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
-        keras.layers.Dense(5, activation="linear", dtype=tf.float32)])
 
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        q_values = model(features,training=False)
-        predictions = {
-            'Q_values': q_values,
-        }
-        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions)
-    if mode== tf.estimator.ModeKeys.TRAIN:
-
-        predictions = model(features,training=True)
-        loss_object = keras.losses.Huber()
-        loss =loss_object(y_true=labels,y_pred=predictions)
-        learning_rate = tf.train.exponential_decay(
-            0.0002, tf.train.get_global_step(), 100, 0.96)
-        optimizer = tf.compat.v1.tpu.CrossShardOptimizer(tf.compat.v1.train.RMSPropOptimizer(learning_rate=learning_rate,momentum=0.01))
-
-        train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-        return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode=mode, loss=loss, train_op=train_op)
-
+def create_model():
+    model = keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=(), dtype=tf.float32),
+                              keras.layers.BatchNormalization(),
+                              keras.layers.Activation("relu"),
+                              keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
+                              keras.layers.BatchNormalization(),
+                              keras.layers.Activation("relu"),
+                              keras.layers.Conv2D(64, (3, 3), use_bias=False, dtype=tf.float32),
+                              keras.layers.BatchNormalization(),
+                              keras.layers.Activation("relu"),
+                              keras.layers.Flatten(),
+                              keras.layers.Dense(7 * 7 * 64, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
+                              keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
+                              keras.layers.Dense(5, activation="linear", dtype=tf.float32)])
+    return model
+# def input_fn(params):
+#             """An input_fn to parse 28x28 images from filename using tf.data."""
+#             batch_size = params["batch_size"]
+#             with open()
+#             pickle.
+#
+#             # dataset = tf.contrib.data.TFRecordDataset(
+#             #     filename, buffer_size=FLAGS.dataset_reader_buffer_size)
+#             # dataset = dataset.repeat()
+#             # dataset = dataset.apply(
+#             #     tf.contrib.data.map_and_batch(
+#             #         parser, batch_size=batch_size,
+#             #         num_parallel_batches=8,
+#             #         drop_remainder=True))
+#             features=state_batch
+#             prob_dataset = tf.data.Dataset.from_tensor_slices((features, q_values),dtype=tf.float32)
+#
+#             batchd_prob = prob_dataset.batch(batch_size,num_parallel_batches=8)
+#             # batchd_prob =batchd_prob.cache()
+#             return batchd_prob
+# def model_fn(features,labels,mode,params):
+#     # state_space,action_space = param
+#     model=keras.Sequential([keras.laye00rs.Conv2D(32, (3, 3), input_shape=(), dtype=tf.float32),
+#         keras.layers.BatchNormalization(),
+#         keras.layers.Activation("relu"),
+#         keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
+#         keras.layers.BatchNormalization(),
+#         keras.layers.Activation("relu"),
+#         keras.layers.Conv2D(64, (3, 3), use_bias=False, dtype=tf.float32),
+#         keras.layers.BatchNormalization(),
+#         keras.layers.Activation("relu"),
+#         keras.layers.Flatten(),
+#         keras.layers.Dense(7 * 7 * 64, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
+#         keras.layers.Dense(512, activation=tf.nn.tanh, use_bias=False, dtype=tf.float32),
+#         keras.layers.Dense(5, activation="linear", dtype=tf.float32)])
+#
+#     if mode == tf.estimator.ModeKeys.PREDICT:
+#         q_values = model(features,training=False)
+#         predictions = {
+#             'Q_values': q_values,
+#         }
+#         return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode, predictions=predictions)
+#     if mode== tf.estimator.ModeKeys.TRAIN:
+#
+#         predictions = model(features,training=True)
+#         loss_object = keras.losses.Huber()
+#         loss =loss_object(y_true=labels,y_pred=predictions)
+#         learning_rate = tf.train.exponential_decay(
+#             0.0002, tf.train.get_global_step(), 100, 0.96)
+#         optimizer = tf.compat.v1.tpu.CrossShardOptimizer(tf.compat.v1.train.RMSPropOptimizer(learning_rate=learning_rate,momentum=0.01))
+#
+#         train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
+#         return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+#
 def make_input_fn(state_batch,q_values):
         """Returns an `input_fn` for train and eval."""
 
-        def input_fn(params):
+        def input_fn(batch_size=16):
             """An input_fn to parse 28x28 images from filename using tf.data."""
-            batch_size = params["batch_size"]
+            # batch_size = params["batch_size"]
+            prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values),dtype=tf.float32)
 
-            # dataset = tf.contrib.data.TFRecordDataset(
-            #     filename, buffer_size=FLAGS.dataset_reader_buffer_size)
-            # dataset = dataset.repeat()
-            # dataset = dataset.apply(
-            #     tf.contrib.data.map_and_batch(
-            #         parser, batch_size=batch_size,
-            #         num_parallel_batches=8,
-            #         drop_remainder=True))
-            features=dict(state_batch)
-            prob_dataset = tf.data.Dataset.from_tensor_slices((features, q_values),dtype=tf.float32)
-
-            batchd_prob = prob_dataset.batch(batch_size,num_parallel_batches=8)
+            batchd_prob = prob_dataset.batch(batch_size,drop_remainder=True)
             # batchd_prob =batchd_prob.cache()
             return batchd_prob
 
@@ -417,40 +446,6 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
-# with strategy.scope():
-#     @tf.function
-#     def train_step(inputs):
-#             global policy, GLOBAL_BATCH_SIZE
-#             # print(policy)
-#             features,labels = inputs
-#
-#             l = tf.keras.losses.Huber(reduction=keras.losses.Reduction.NONE)
-#             def compute_loss(labels,predictions):
-#
-#                     # training=True is only needed if there are layers with different
-#                     # behavior during training versus inference (e.g. Dropout).
-#                     # logits = policy.model(features)
-#
-#                     per_example_loss=l(y_true=labels,y_pred=predictions)
-#
-#                     return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
-#
-#                 # grads = tape.gradient(loss, policy.model.trainable_variables)
-#                 # policy.optimizer.apply_gradients(list(zip(grads, policy.model.trainable_variables)))
-#                 # return cross_entropy
-#             # print("Features: "+str(features))
-#             with tf.GradientTape() as tape:
-#                 predictions = policy.model(features, training=True)
-#                 loss = compute_loss(labels, predictions)
-#
-#             grads = tape.gradient(loss, policy.model.trainable_variables)
-#             policy.optimizer.apply_gradients(zip(grads, policy.model.trainable_variables))
-#             return loss
-#     # @tf.function
-#     # def darQ(policy,features):
-#     #     features.reshape(shape)
-#     #
-#
 
 
 class Policy:
@@ -485,15 +480,13 @@ class Policy:
         self.mapeo = {"%": 10, "<": 30, ">": 30, "v": 30, "^": 30, ".": 150, "G": 90, " ":1,"o":10}
         self.escala = 255
         if self.use_image:
+            with strategy.scope():
+                self.model= create_model()
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss,
+                               optimizer=keras.optimizers.RMSprop(learning_rate=0.0002, momentum=0.01))
+            self.model.save_weights(PATH_TO_WEIGTHS, overwrite=True)
 
-            self.model= tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
-                                                      config = my_tpu_run_config,
-                                                      use_tpu=FLAGS.use_tpu,
-                                                      train_batch_size=16,predict_batch_size=16)
-            self.model_action = tf.compat.v1.estimator.tpu.TPUEstimator(model_fn=model_fn,
-                                                      config = my_predict_config,
-                                                      use_tpu=False,train_batch_size=16,
-                                                      predict_batch_size=16)
+
 
 
 
@@ -541,9 +534,9 @@ class Policy:
     # @tf.function
     def update_policy(self,agent,callbacks=[],log_dir=""):
         if not self.priority:
-            # print(gpus)
-
-
+            tf.keras.backend.clear_session()
+            model = create_model()
+            model.load_weights(PATH_TO_WEIGTHS)
 
             if len(self.memory) < BATCH_SIZE:
                         return
@@ -573,17 +566,15 @@ class Policy:
             next_state_values = np.zeros([BATCH_SIZE],dtype =tf.float32)
             non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
             non_final_next_states = np.array(non_final_next_states, dtype=tf.float32).reshape(shape)
-            predict_1 =self.model.predict(make_predict_fn([non_final_next_states]))
-            predict_2 =self.model.predict(make_predict_fn(features=[state_batch]))
+            predict_1 =model.predict([non_final_next_states])
+            predict_2 =model.predict([state_batch])
             print(predict_1)
             print(predict_2)
             next_state_values[non_final_mask] = np.max(np.array(predict_1["Q_values"]),axis=1)
             q_update = (reward_batch+ self.gamma * next_state_values)
             q_values = np.array(predict_2["Q_values"])
             q_values[action_batch[:,0],action_batch[:,1]] = q_update
-            # strategy = self.strategy
-            global GLOBAL_BATCH_SIZE
-            GLOBAL_BATCH_SIZE = int(BATCH_SIZE/ 8)
+
 
             # print(f"GLOBAL BATCH SIZE:{GLOBAL_BATCH_SIZE:d}")
             # print(f"Number of replicas: {strategy.num_replicas_in_sync}")
@@ -598,8 +589,9 @@ class Policy:
             # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
             # self.model_action.set_weights(self.model.get_weights())
 
-            self.model.train(input_fn=make_input_fn((state_batch,q_values)),
-                    max_steps=FLAGS.train_steps)
+            self.model.fit(lambda : make_input_fn((state_batch,q_values)),steps_per_epoch=100,
+    epochs=20)
+            self.model.save_weigths(PATH_TO_WEIGTHS,overwrite=True)
             # print(history["histroy"])
             # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
             # global policy
@@ -805,11 +797,15 @@ class QLearningAgent(ReinforcementAgent):
 
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
+
                 # input_fn=tf.compat.v1.estimator.inputs.numpy_input_fn(features.reshape(shape),shuffle=False)
                 features= features.reshape(shape)
+                model = create_model()
+                model.load_weights(PATH_TO_WEIGTHS)
+                model.reset_states()
                 # features = tf.convert_to_tensor(features,dtype=tf.float32)
-                cosa=list(self.policy_second.model_action.predict(input_fn = make_predict_fn(features)))
-                print(cosa)
+                Q_actual=model.predict(features)
+
                 # for single_prediction in cosa:
                 #     Q_actual =single_prediction["Q_values"]
                 # print(cosa["Q_values"])
