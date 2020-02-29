@@ -198,9 +198,9 @@ def input_fn(batch_size=16):
     print(source)
     # with open(PATH_TO_BATCH,"r+b") as fp:
     #     state_batch,q_values = pickle.load(fp)
-    prob_dataset = tf.data.Dataset.from_tensors(source)
+    prob_dataset = tf.data.Dataset.from_tensor_slices(source)
 
-    # batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
+    batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
     # batchd_prob =batchd_prob.cache()
     return prob_dataset.repeat()
 def make_input_fn(state_batch,q_values):
