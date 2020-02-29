@@ -52,9 +52,12 @@ def lstm_model(seq_len=100, batch_size=None, stateful=True):
 
 tf.keras.backend.clear_session()
 
-resolver = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)
-tf.contrib.distribute.initialize_tpu_system(resolver)
-strategy = tf.contrib.distribute.TPUStrategy(resolver)
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=TPU_WORKER)
+tf.config.experimental_connect_to_cluster(resolver)
+tf.tpu.experimental.initialize_tpu_system(resolver)
+
+# tf.contrib.distribute.initialize_tpu_system(resolver)
+strategy = tf.distribute.experimental.TPUStrategy(resolver)
 
 with strategy.scope():
   training_model = lstm_model(seq_len=100, stateful=False)
