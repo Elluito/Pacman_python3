@@ -568,11 +568,10 @@ class Policy:
             non_final_next_states = np.array(non_final_next_states, dtype=np.float).reshape(shape)
             predict_1 =model.predict([non_final_next_states])
             predict_2 =model.predict([state_batch])
-            print(predict_1)
-            print(predict_2)
-            next_state_values[non_final_mask] = np.max(np.array(predict_1["Q_values"]),axis=1)
+
+            next_state_values[non_final_mask] = np.max(predict_1,axis=1)
             q_update = (reward_batch+ self.gamma * next_state_values)
-            q_values = np.array(predict_2["Q_values"])
+            q_values = np.array(predict_2)
             q_values[action_batch[:,0],action_batch[:,1]] = q_update
 
 
