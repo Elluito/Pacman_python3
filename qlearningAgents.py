@@ -604,7 +604,7 @@ class Policy:
             # self.model_action.set_weights(self.model.get_weights())
             with open(PATH_TO_BATCH,"w+b") as fp:
                 pickle.dump((state_batch,q_values),fp)
-            self.model.fit(input_fn(),steps_per_epoch=100,epochs=20)
+            self.model.fit(input_fn(),steps_per_epoch=100,epochs=1)
             # self.model.save_weigths(PATH_TO_WEIGTHS,overwrite=True)
             # print(history["histroy"])
             # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
