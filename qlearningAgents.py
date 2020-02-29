@@ -208,7 +208,7 @@ def input_fn(batch_size=16):
 
     batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
     # batchd_prob =batchd_prob.cache()
-    return prob_dataset.repeat()
+    return batchd_prob.repeat()
 
 
 def make_input_fn(state_batch,q_values):
