@@ -48,9 +48,14 @@ BATCH_SIZE = 128
 TPU_WORKER = 'grpc://10.240.1.2:8470'
 PATH_TO_WEIGTHS = "models/weights.h5"
 
-resolver = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)
-tf.contrib.distribute.initialize_tpu_system(resolver)
-strategy = tf.contrib.distribute.TPUStrategy(resolver)
+# resolver = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)
+
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=TPU_WORKER)
+tf.config.experimental_connect_to_cluster(resolver)
+tf.tpu.experimental.initialize_tpu_system(resolver)
+
+# tf.contrib.distribute.initialize_tpu_system(resolver)
+strategy = tf.distribute.experimental.TPUStrategy(resolver)
 # print("esta es la estrategy")
 # print(strategy)
 # class FLAGS(object):
