@@ -808,10 +808,10 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         with open(nombre_archivo, "a") as f:
             f.write(str(int(game.state.isWin())) + "\n")
         with open(nombre_archivo_score,"a") as f:
-            f.write(str(r)+ "\n")
+            f.write(str(game.state.getScore())+ "\n")
 
 
-        # if i % 10 == 0 and not pacman.prueba:
+        # if i % 10 == 0 and not pacman.prueb a:
         #     p = np.mean(prob)
         #     with open(nombre_archivo, "a") as f:
         #         f.write(str(p) + "\n")

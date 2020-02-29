@@ -20,10 +20,12 @@
 # John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
-from util import *
-import time, os
-import traceback
 import sys
+import time
+import traceback
+
+from util import *
+
 
 #######################
 # Parts worth reading #
@@ -770,4 +772,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return res,self.agents[0].epsilon
+        return self.agents[0].lastReward,self.agents[0].epsilon

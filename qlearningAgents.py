@@ -291,7 +291,7 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 class Policy:
-    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','action_space')
+    __slots__ = ( 'width', 'height', 'dim_action', 'gamma','load_name','use_prior','use_image','model','memory','epsilon','escala','mapeo','state_space','priority','priority_memory','action_space')
 
     def __init__(self, width, height, dim_action, gamma=0.9, load_name=None,use_prior =False,use_image =False):
         # tf.enable_eager_execution()
@@ -309,7 +309,7 @@ class Policy:
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
 
-        # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
+        self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
 
@@ -447,7 +447,7 @@ class Policy:
 
                 errors = tf.pow(tf.reduce_sum(q_values-y_pred,axis=1),2)
 
-                # loss = tf.reduce_mean(tf.multiply(weights,errors))
+                loss = tf.reduce_mean(tf.multiply(weights,errors))
                 loss = tf.reduce_mean(errors)
 
             grads = tape.gradient(loss, self.model.trainable_variables)
