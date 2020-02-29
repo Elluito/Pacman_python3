@@ -24,7 +24,7 @@ from game import *
 from learningAgents import ReinforcementAgent
 from pacman import GameState
 from segtree import SumSegmentTree, MinSegmentTree
-
+import pickle
 # gpus = tf.config.experimental.list_physical_devices('GPU')
 # resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='alfredoavendano')
 # tf.config.experimental_connect_to_cluster(resolver)
@@ -47,6 +47,7 @@ Transition = namedtuple('Transition',
 BATCH_SIZE = 128
 TPU_WORKER = 'grpc://10.240.1.2:8470'
 PATH_TO_WEIGTHS = "models/weights.h5"
+PATH_TO_BATCH ="data/CURRENT_BATCH"
 
 # resolver = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)
 
@@ -188,6 +189,17 @@ def create_model():
 #         train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
 #         return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 #
+def input_fn(batch_size=16):
+    """An input_fn to parse 28x28 images from filename using tf.data."""
+    # batch_size = params["batch_size"]
+    with open(PATH_TO_BATCH,"r+b") as fp:
+        state_batch,q_values = pickle.load(fp)
+
+    prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values), dtype=tf.float32)
+
+    batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
+    # batchd_prob =batchd_prob.cache()
+    return batchd_prob
 def make_input_fn(state_batch,q_values):
         """Returns an `input_fn` for train and eval."""
 
@@ -592,10 +604,10 @@ class Policy:
             # print("batched dataset:"+str(batched_data))
             # print("Lista del batched dataset "+str(list(batched_data.as_numpy_iterator())))
             # self.model_action.set_weights(self.model.get_weights())
-
-            self.model.fit(lambda : make_input_fn((state_batch,q_values)),steps_per_epoch=100,
-    epochs=20)
-            self.model.save_weigths(PATH_TO_WEIGTHS,overwrite=True)
+            with open(PATH_TO_BATCH,"w+b") as fp:
+                pickle.dump((state_batch,q_values),fp)
+            self.model.fit(input_fn(),steps_per_epoch=100,epochs=20)
+            # self.model.save_weigths(PATH_TO_WEIGTHS,overwrite=True)
             # print(history["histroy"])
             # indexes=[range(GLOBAL_BATCH_SIZE),range(GLOBAL_BATCH_SIZE,2*GLOBAL_BATCH_SIZE),range(2*GLOBAL_BATCH_SIZE,3*GLOBAL_BATCH_SIZE),range(3*GLOBAL_BATCH_SIZE,4*GLOBAL_BATCH_SIZE),range(4*GLOBAL_BATCH_SIZE,5*GLOBAL_BATCH_SIZE),range(5*GLOBAL_BATCH_SIZE,6*GLOBAL_BATCH_SIZE),range(6*GLOBAL_BATCH_SIZE,7*GLOBAL_BATCH_SIZE),range(7*GLOBAL_BATCH_SIZE,8*GLOBAL_BATCH_SIZE)]
             # global policy
@@ -820,7 +832,8 @@ class QLearningAgent(ReinforcementAgent):
 
             Q_actual = self.policy_second.model_action.predict(np.array(features).reshape(1,-1))
 
-
+        if self.episodesSoFar%10==0:
+            self.policy_second.model.save_weights(PATH_TO_WEIGTHS,overwrite=True)
         accion = None
 
         assert len(self.memory) <= self.memory_length, "La memoria tiene más de {} elementos".format(self.memory_length)
