@@ -20,8 +20,9 @@ def input_fn(seq_len=100, batch_size=1024):
     txt = f.read()
 
   source = tf.constant(transform(txt), dtype=tf.int32)
-
+  print(source)
   ds = tf.data.Dataset.from_tensor_slices(source).batch(seq_len+1, drop_remainder=True)
+  print(ds)
 
   def split_input_target(chunk):
     input_text = chunk[:-1]

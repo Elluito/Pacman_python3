@@ -196,9 +196,9 @@ def input_fn(batch_size=16):
         state_batch,q_values = pickle.load(fp)
     prob_dataset = tf.data.Dataset.from_tensors((state_batch, q_values))
 
-    batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
+    # batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
     # batchd_prob =batchd_prob.cache()
-    return batchd_prob.repeat()
+    return prob_dataset.repeat()
 def make_input_fn(state_batch,q_values):
         """Returns an `input_fn` for train and eval."""
 
