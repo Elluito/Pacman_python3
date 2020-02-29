@@ -47,7 +47,7 @@ Transition = namedtuple('Transition',
 BATCH_SIZE = 128
 TPU_WORKER = 'grpc://10.240.1.2:8470'
 PATH_TO_WEIGTHS = "models/weights.h5"
-PATH_TO_BATCH ="data/CURRENT_BATCH"
+PATH_TO_BATCH ="datos/CURRENT_BATCH"
 
 # resolver = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)
 
