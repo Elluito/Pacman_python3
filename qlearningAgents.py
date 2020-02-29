@@ -115,7 +115,7 @@ strategy = tf.contrib.distribute.TPUStrategy(resolver)
 # global  strategy
 
 def create_model():
-    model = keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=(), dtype=tf.float32),
+    model = keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=(17,17), dtype=tf.float32),
                               keras.layers.BatchNormalization(),
                               keras.layers.Activation("relu"),
                               keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
