@@ -194,15 +194,11 @@ def input_fn(batch_size=16):
     # batch_size = params["batch_size"]
     with open(PATH_TO_BATCH,"r+b") as fp:
         state_batch,q_values = pickle.load(fp)
-    print("state_batch")
-    print(state_batch)
-    print("q_values")
-    print(q_values)
     prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch, q_values))
 
     batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
     # batchd_prob =batchd_prob.cache()
-    return batchd_prob
+    return batchd_prob.repeat()
 def make_input_fn(state_batch,q_values):
         """Returns an `input_fn` for train and eval."""
 
@@ -502,8 +498,7 @@ class Policy:
         if self.use_image:
             with strategy.scope():
                 self.model= create_model()
-                self.model.compile(loss=tf.compat.v1.losses.huber_loss,
-                               optimizer=keras.optimizers.RMSprop(learning_rate=0.0002, momentum=0.01))
+                self.model.compile(loss=tf.compat.v1.losses.huber_loss,optimizer=keras.optimizers.RMSprop(learning_rate=0.0002, momentum=0.01))
             self.model.save_weights(PATH_TO_WEIGTHS, overwrite=True)
 
 
