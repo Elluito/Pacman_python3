@@ -192,17 +192,25 @@ def create_model():
 def input_fn(batch_size=16):
     """An input_fn to parse 28x28 images from filename using tf.data."""
     # batch_size = params["batch_size"]
-    with tf.io.gfile.GFile(PATH_TO_BATCH, 'r+b') as f:
-        txt = f.read()
-    source=tf.constant(txt, dtype=tf.float32)
-    print(source)
-    # with open(PATH_TO_BATCH,"r+b") as fp:
-    #     state_batch,q_values = pickle.load(fp)
-    prob_dataset = tf.data.Dataset.from_tensor_slices(source)
+    # with tf.io.gfile.GFile(PATH_TO_BATCH, 'r+b') as f:
+    #     txt = f.read()
+    # source=tf.constant(txt, dtype=tf.float32)
+    # print(source)
+    with open(PATH_TO_BATCH,"r+b") as fp:
+        state_batch,q_values = pickle.load(fp)
+    state_batch =tf.constant(state_batch,dtype=tf.float32)
+    q_values = tf.constant(q_values,dtype=tf.float32)
+    print("state _batch")
+    print(state_batch)
+    print("q values")
+    print(q_values)
+    prob_dataset = tf.data.Dataset.from_tensor_slices((state_batch,q_values))
 
     batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
     # batchd_prob =batchd_prob.cache()
     return prob_dataset.repeat()
+
+
 def make_input_fn(state_batch,q_values):
         """Returns an `input_fn` for train and eval."""
 
