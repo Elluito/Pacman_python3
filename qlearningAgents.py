@@ -198,7 +198,7 @@ def input_fn(batch_size=16):
 
     batchd_prob = prob_dataset.batch(batch_size, drop_remainder=True)
     # batchd_prob =batchd_prob.cache()
-    return batchd_prob.repeat()
+    return batchd_prob.repeat(2000)
 def make_input_fn(state_batch,q_values):
         """Returns an `input_fn` for train and eval."""
 
