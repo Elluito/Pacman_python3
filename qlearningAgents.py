@@ -115,7 +115,7 @@ strategy = tf.contrib.distribute.TPUStrategy(resolver)
 # global  strategy
 
 def create_model():
-    model = keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=(17,17), dtype=tf.float32),
+    model = keras.Sequential([keras.layers.Conv2D(32, (3, 3), input_shape=(17,17,1), dtype=tf.float32),
                               keras.layers.BatchNormalization(),
                               keras.layers.Activation("relu"),
                               keras.layers.Conv2D(64, (3, 3), strides=[2, 2], use_bias=False, dtype=tf.float32),
@@ -465,7 +465,7 @@ class Policy:
         if use_image:
             self.state_space = (self.height,self.width,1)
         else:
-            self.state_space = (dim_action,)
+            self.state_space = (7,)
         self.action_space = dim_action
         self.use_image = use_image
         self.gamma = gamma
