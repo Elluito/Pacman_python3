@@ -550,7 +550,7 @@ class Policy:
             shape.extend(self.state_space)
             batch = Transition(*zip(*transitions))
             state_batch = batch.state
-            state_batch = np.array(state_batch, dtype=tf.float32).reshape(shape )
+            state_batch = np.array(state_batch, dtype=np.float).reshape(shape )
             action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
             reward_batch = np.array(batch.reward)
             reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
@@ -563,9 +563,9 @@ class Policy:
             non_final_mask = np.nonzero(non_final_mask)[0]
             non_final_next_states = [s for s in batch.next_state
                                      if not s.data._lose and not s.data._win]
-            next_state_values = np.zeros([BATCH_SIZE],dtype =tf.float32)
+            next_state_values = np.zeros([BATCH_SIZE],dtype =np.float)
             non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-            non_final_next_states = np.array(non_final_next_states, dtype=tf.float32).reshape(shape)
+            non_final_next_states = np.array(non_final_next_states, dtype=np.float).reshape(shape)
             predict_1 =model.predict([non_final_next_states])
             predict_2 =model.predict([state_batch])
             print(predict_1)
@@ -629,7 +629,7 @@ class Policy:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
             obs_batch, act_batch, rew_batch, next_obs_batch, not_done_mask, weights, indxes = self.priority_memory.sample(BATCH_SIZE,0.5)
-            self.pesos = np.array(weights,dtype=tf.float32)
+            self.pesos = np.array(weights,dtype=np.float)
             non_final_mask = np.where(not_done_mask==0)[0]
             act_batch = np.array([list(range(len(act_batch))), act_batch]).transpose()
             next_state_values = np.zeros([BATCH_SIZE], dtype=float)
