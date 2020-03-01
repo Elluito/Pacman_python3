@@ -49,7 +49,7 @@ def readCommand(argv):
 
 
 def graficar_todos_juntos(max_number):
-    names= ["T2 exponencial","T1-T2 lineal"]
+    names= ["T2 exponencial"]
     all_datos = []
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
@@ -66,15 +66,18 @@ def graficar_todos_juntos(max_number):
         all_datos.append(prom)
     # print(all_datos)
     for i,prom in enumerate(all_datos):
-        x = np.linspace(0, len(prom) * 10, len(prom))
-        plt.plot(x,  smooth(prom,0),label=names[i])
+
+        # x = np.linspace(0, len(prom) * 10, len(prom))
+        plt.plot(running_mean(1000,prom),label=names[i])
     plt.xlabel("Episodes")
     plt.ylabel("Winning probability")
     plt.legend()
 
     plt.show()
 
+def running_mean(N,x):
 
+    return np.convolve(x, np.ones((N,)) / N, mode='valid')
 
 def graficar_uno():
     args = readCommand(sys.argv[1:])
@@ -129,4 +132,4 @@ def graficar_uno():
 
 if __name__ == '__main__':
 
-    graficar_todos_juntos(1)
+    graficar_todos_juntos(0)

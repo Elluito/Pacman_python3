@@ -744,8 +744,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     else:
         NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(time.time()),attemp,pacman.policy_second.gamma,pacman.n1)
         nombre_archivo = "datos/prob_task_{}_attempt_{}.txt".format(pacman.task,attemp)
-        nombre_archivo_score = "datos/score_task_{}_attempt_{}.txt".format(pacman.task, attemp,
-                                                                                            pacman.n1)
+        nombre_archivo_score = "datos/score_task_{}_attempt_{}.txt".format(pacman.task, attemp,pacman.n1)
     open(nombre_archivo, "w").close()
     open(nombre_archivo_score, "w").close()
     from qlearningAgents import PacmanQAgent
