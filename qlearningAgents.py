@@ -613,7 +613,7 @@ class Policy:
             # self.model_action.set_weights(self.model.get_weights())
             with open(PATH_TO_BATCH,"w+b") as fp:
                 pickle.dump((state_batch,q_values),fp)
-            self.model.fit(input_fn(),steps_per_epoch=20,epochs=1)
+            self.model.fit(input_fn(),steps_per_epoch=20,epochs=1,verbose=0)
 
             # self.model.save_weigths(PATH_TO_WEIGTHS,overwrite=True)
             # print(history["histroy"])
