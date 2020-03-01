@@ -584,7 +584,7 @@ class Game:
         sys.stderr = OLD_STDERR
 
 
-    def ººººººººººººººººººººººººººrun( self,EPISODES,callbacks=[],log_dir="" ):
+    def run( self,EPISODES,callbacks=[],log_dir="" ):
 
         """
         Main control loop for game play.
