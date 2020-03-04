@@ -598,12 +598,12 @@ class QLearningAgent(ReinforcementAgent):
             if self.policy_second.use_image:
                 shape = [1]
                 shape.extend(self.policy_second.state_space)
-                Q_actual =self.policy_second.model.predict_on_batch(features.reshape(shape))
+                Q_actual =self.policy_second.model.predict(features.reshape(shape))
 
 
             else:
 
-                Q_actual = self.policy_second.model.predict_on_batch(np.array(features).reshape(1,-1))
+                Q_actual = self.policy_second.model.predict(np.array(features).reshape(1,-1))
 
 
             accion = None
@@ -636,7 +636,7 @@ class QLearningAgent(ReinforcementAgent):
                     mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
 
                     if mse <= 0.02:
-                        Q_pasado = self.policy_first.model.predict_on_batch(features.reshape(shape))
+                        Q_pasado = self.policy_first.model.predict(features.reshape(shape))
                         Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
                         accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
                             range(len(self.actions)))
@@ -657,9 +657,17 @@ class QLearningAgent(ReinforcementAgent):
 
             if not self.prueba:
                     # a =(EPS_END-EPS_START)/self.num_episodes
-                    eps_threshold = EPS_START*(EPS_DECAY)**self.episodesSoFar
+                    eps_trashold = EPS_END
+                    if self.episodesSoFar < 40000:
+                        eps_threshold = EPS_START * (EPS_DECAY) ** self.episodesSoFar
+
+
+
                     self.epsilon = eps_threshold
-                    self.phi = self.phi*PHI_DECAY
+                    if self.episodesSoFar<40000:
+                        self.phi = self.phi*PHI_DECAY
+                    else:
+                        self.phi = self.phi
                     self.n +=1
 
 

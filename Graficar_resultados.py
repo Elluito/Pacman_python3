@@ -48,8 +48,9 @@ def readCommand(argv):
     return args
 
 
-def graficar_todos_juntos(max_number):
-    names= ["T2 exponencial"]
+def graficar_todos_juntos(max_number,window):
+    names= ["T2-exponencial-prob","T1-T2-exponencial-prob"]
+    # names=["T2-exponencial-score","T1-T2-exponencial-score"]
     all_datos = []
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
@@ -66,11 +67,18 @@ def graficar_todos_juntos(max_number):
         all_datos.append(prom)
     # print(all_datos)
     for i,prom in enumerate(all_datos):
+        y=running_mean(window,prom)
+        x = np.linspace(0, len(prom) * 10, len(y))
+        plt.plot(x,y,label=names[i])
 
-        # x = np.linspace(0, len(prom) * 10, len(prom))
-        plt.plot(running_mean(1000,prom),label=names[i])
     plt.xlabel("Episodes")
-    plt.ylabel("Winning probability")
+    s=""
+    if "score" in names[i]:
+        s="Final score of episode"
+    else :
+        s="Winning probability "
+    plt.ylabel(s)
+    plt.title("Estimate with running mean of size {}".format(window))
     plt.legend()
 
     plt.show()
@@ -104,8 +112,9 @@ def graficar_uno():
     prom = np.mean(datos, axis=1)
     x = np.linspace(0, len(prom) * 10, len(prom))
     plt.plot(x, prom)
-    plt.xlabel("Episodios transcurridos")
-    plt.ylabel("Probabilidad  de ganar")
+    plt.xlabel("Episodes")
+
+    plt.ylabel("winning probabolity")
     plt.legend([args["file"][1:]])
 
     nombre_fig = "prob" + "_Tarea_0"
@@ -132,4 +141,4 @@ def graficar_uno():
 
 if __name__ == '__main__':
 
-    graficar_todos_juntos(0)
+    graficar_todos_juntos(1,500)
