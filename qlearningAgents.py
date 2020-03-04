@@ -25,8 +25,8 @@ from learningAgents import ReinforcementAgent
 from pacman import GameState
 from segtree import SumSegmentTree, MinSegmentTree
 
-global gpus
-gpus = tf.config.experimental.list_physical_devices('GPU')
+# global gpus
+# gpus = tf.config.experimental.list_physical_devices('GPU')
 
 NORTH = 'North'
 SOUTH = 'South'
