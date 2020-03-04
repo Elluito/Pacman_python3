@@ -387,42 +387,42 @@ class Policy:
         if not self.priority:
             # print(gpus)
 
-            with tf.device("GPU:0"):
-
-                if len(self.memory) < BATCH_SIZE:
-                            return
-
-                transitions = self.memory.sample(BATCH_SIZE)
-                # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
-                # detailed explanation). This converts batch-array of Transitions
-                # to Transition of batch-arrays.
-
-                shape = [-1]
-                shape.extend(self.state_space)
-                batch = Transition(*zip(*transitions))
-                state_batch = batch.state
-                state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
-                action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
-                reward_batch = np.array(batch.reward)
-                reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
 
 
-                # Compute a mask of non-final states and concatenate the batch elements
-                # (a final state would've been the one after which simulation ended)
-                non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
-                                          dtype=np.int)
-                non_final_mask = np.nonzero(non_final_mask)[0]
-                non_final_next_states = [s for s in batch.next_state
-                                         if not s.data._lose and not s.data._win]
-                next_state_values = np.zeros([BATCH_SIZE],dtype =float)
-                non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-                non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
-                next_state_values[non_final_mask] = np.max(self.model.predict_on_batch([non_final_next_states]),axis=1)
-                q_update = (reward_batch+ self.gamma * next_state_values)
-                q_values = np.array(self.model.predict_on_batch([state_batch]))
-                q_values[action_batch[:,0],action_batch[:,1]] = q_update
-                for _ in range(20):
-                    self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
+            if len(self.memory) < BATCH_SIZE:
+                        return
+
+            transitions = self.memory.sample(BATCH_SIZE)
+            # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+            # detailed explanation). This converts batch-array of Transitions
+            # to Transition of batch-arrays.
+
+            shape = [-1]
+            shape.extend(self.state_space)
+            batch = Transition(*zip(*transitions))
+            state_batch = batch.state
+            state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
+            action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
+            reward_batch = np.array(batch.reward)
+            reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
+
+
+            # Compute a mask of non-final states and concatenate the batch elements
+            # (a final state would've been the one after which simulation ended)
+            non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
+                                      dtype=np.int)
+            non_final_mask = np.nonzero(non_final_mask)[0]
+            non_final_next_states = [s for s in batch.next_state
+                                     if not s.data._lose and not s.data._win]
+            next_state_values = np.zeros([BATCH_SIZE],dtype =float)
+            non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
+            non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
+            next_state_values[non_final_mask] = np.max(self.model.predict_on_batch([non_final_next_states]),axis=1)
+            q_update = (reward_batch+ self.gamma * next_state_values)
+            q_values = np.array(self.model.predict_on_batch([state_batch]))
+            q_values[action_batch[:,0],action_batch[:,1]] = q_update
+            for _ in range(20):
+                self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
         else:
             if len(self.priority_memory) < BATCH_SIZE:
                 return
@@ -591,84 +591,84 @@ class QLearningAgent(ReinforcementAgent):
           HINT: You might want to use util.flipCoin(prob)
           HINT: To pick randomly from a list, use random.choice(list)
         """
-        with tf.device("GPU:0"):
-            # Pick Action
-            features = dar_features(self.policy_second,state)
-            shape = [1,-1]
-            if self.policy_second.use_image:
-                shape = [1]
-                shape.extend(self.policy_second.state_space)
-                Q_actual =self.policy_second.model.predict(features.reshape(shape))
+
+        # Pick Action
+        features = dar_features(self.policy_second,state)
+        shape = [1,-1]
+        if self.policy_second.use_image:
+            shape = [1]
+            shape.extend(self.policy_second.state_space)
+            Q_actual =self.policy_second.model.predict(features.reshape(shape))
 
 
-            else:
+        else:
 
-                Q_actual = self.policy_second.model.predict(np.array(features).reshape(1,-1))
-
-
-            accion = None
-
-            assert len(self.memory) <= self.memory_length, f"La memoria tiene más de {self.memory_length:d} elementos"
-            pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
-            self.memory.append(pedazo)
-            if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
-                if self.num_datos < MAX_GUARDAR and self.prueba :
-                    guardar = []
-                    for elem in self.memory:
-                        if len(guardar) == 0:
-                            guardar = elem
-                        else:
-                            guardar = np.append(guardar, elem)
-                    filename = f"datos/piezas_task_{self.task:d}"
-                    with open(filename, 'a+b') as fp:
-                        pickle.dump(guardar, fp)
-                    self.num_datos += 1
+            Q_actual = self.policy_second.model.predict(np.array(features).reshape(1,-1))
 
 
-                if self.num_datos >= MAX_GUARDAR:
-                    self.BREAK = True
+        accion = None
 
-
-                situacion = np.array(self.memory).reshape(1,4,27)
-                # situacion = situacion.reshape(1,-1)
-                if self.similarity_function is not None:
-                    pred =  self.similarity_function.predict(situacion)
-                    mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
-
-                    if mse <= 0.02:
-                        Q_pasado = self.policy_first.model.predict(features.reshape(shape))
-                        Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
-                        accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
-                            range(len(self.actions)))
-                self.memory.pop(0)
-            else:
-                    accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
-
-
-            if accion is None:
-                accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
-                    range(len(self.actions)))
-
-
-
-            action = self.actions[accion]
-
-            # util.raiseNotDefined()
-
-            if not self.prueba:
-                    # a =(EPS_END-EPS_START)/self.num_episodes
-                    eps_trashold = EPS_END
-                    if self.episodesSoFar < 40000:
-                        eps_threshold = EPS_START * (EPS_DECAY) ** self.episodesSoFar
-
-
-
-                    self.epsilon = eps_threshold
-                    if self.episodesSoFar<40000:
-                        self.phi = self.phi*PHI_DECAY
+        assert len(self.memory) <= self.memory_length, f"La memoria tiene más de {self.memory_length:d} elementos"
+        pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
+        self.memory.append(pedazo)
+        if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
+            if self.num_datos < MAX_GUARDAR and self.prueba :
+                guardar = []
+                for elem in self.memory:
+                    if len(guardar) == 0:
+                        guardar = elem
                     else:
-                        self.phi = self.phi
-                    self.n +=1
+                        guardar = np.append(guardar, elem)
+                filename = f"datos/piezas_task_{self.task:d}"
+                with open(filename, 'a+b') as fp:
+                    pickle.dump(guardar, fp)
+                self.num_datos += 1
+
+
+            if self.num_datos >= MAX_GUARDAR:
+                self.BREAK = True
+
+
+            situacion = np.array(self.memory).reshape(1,4,27)
+            # situacion = situacion.reshape(1,-1)
+            if self.similarity_function is not None:
+                pred =  self.similarity_function.predict(situacion)
+                mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
+
+                if mse <= 0.02:
+                    Q_pasado = self.policy_first.model.predict(features.reshape(shape))
+                    Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
+                    accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
+                        range(len(self.actions)))
+            self.memory.pop(0)
+        else:
+                accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
+
+
+        if accion is None:
+            accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
+                range(len(self.actions)))
+
+
+
+        action = self.actions[accion]
+
+        # util.raiseNotDefined()
+
+        if not self.prueba:
+                # a =(EPS_END-EPS_START)/self.num_episodes
+                eps_trashold = EPS_END
+                if self.episodesSoFar < 40000:
+                    eps_threshold = EPS_START * (EPS_DECAY) ** self.episodesSoFar
+
+
+
+                self.epsilon = eps_threshold
+                if self.episodesSoFar<40000:
+                    self.phi = self.phi*PHI_DECAY
+                else:
+                    self.phi = self.phi
+                self.n +=1
 
 
 
