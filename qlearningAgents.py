@@ -309,7 +309,7 @@ class Policy:
         self.gamma = gamma
         self.memory = ReplayMemory(10000)
 
-        self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
+        # self.priority_memory = PrioritizedReplayBuffer(10000,0.5)
         self.epsilon = EPS_START
         # self.pesos = np.ones(BATCH_SIZE, dtype=np.float32)
 
@@ -419,7 +419,7 @@ class Policy:
                 non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
                 next_state_values[non_final_mask] = np.max(self.model.predict_on_batch([non_final_next_states]),axis=1)
                 q_update = (reward_batch+ self.gamma * next_state_values)
-                q_values = self.model.predict_on_batch([state_batch])
+                q_values = np.array(self.model.predict_on_batch([state_batch]))
                 q_values[action_batch[:,0],action_batch[:,1]] = q_update
                 for _ in range(20):
                     self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
@@ -437,7 +437,7 @@ class Policy:
             # rew_batch = rew_batch/max(np.abs(rew_batch))
 
             q_update = (rew_batch + self.gamma * next_state_values)
-            q_values = self.model.predict([obs_batch])
+            q_values = np.array(self.model.predict([obs_batch]))
             q_values[act_batch[:, 0], act_batch[:, 1]] = q_update
 
             with tf.GradientTape() as tape:
@@ -579,7 +579,7 @@ class QLearningAgent(ReinforcementAgent):
 
     def set_start_time(self):
         self.episodeStartTime =time.time()
-
+    # @tf.function
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
@@ -591,75 +591,76 @@ class QLearningAgent(ReinforcementAgent):
           HINT: You might want to use util.flipCoin(prob)
           HINT: To pick randomly from a list, use random.choice(list)
         """
-        # Pick Action
-        features = dar_features(self.policy_second,state)
-        shape = [1,-1]
-        if self.policy_second.use_image:
-            shape = [1]
-            shape.extend(self.policy_second.state_space)
-            Q_actual =self.policy_second.model.predict(features.reshape(shape))
+        with tf.device("GPU:0"):
+            # Pick Action
+            features = dar_features(self.policy_second,state)
+            shape = [1,-1]
+            if self.policy_second.use_image:
+                shape = [1]
+                shape.extend(self.policy_second.state_space)
+                Q_actual =self.policy_second.model.predict_on_batch(features.reshape(shape))
 
 
-        else:
+            else:
 
-            Q_actual = self.policy_second.model.predict(np.array(features).reshape(1,-1))
-
-
-        accion = None
-
-        assert len(self.memory) <= self.memory_length, f"La memoria tiene más de {self.memory_length:d} elementos"
-        pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
-        self.memory.append(pedazo)
-        if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
-            if self.num_datos < MAX_GUARDAR and self.prueba :
-                guardar = []
-                for elem in self.memory:
-                    if len(guardar) == 0:
-                        guardar = elem
-                    else:
-                        guardar = np.append(guardar, elem)
-                filename = f"datos/piezas_task_{self.task:d}"
-                with open(filename, 'a+b') as fp:
-                    pickle.dump(guardar, fp)
-                self.num_datos += 1
+                Q_actual = self.policy_second.model.predict_on_batch(np.array(features).reshape(1,-1))
 
 
-            if self.num_datos >= MAX_GUARDAR:
-                self.BREAK = True
+            accion = None
+
+            assert len(self.memory) <= self.memory_length, f"La memoria tiene más de {self.memory_length:d} elementos"
+            pedazo = dar_pedazo_de_imagenstate(state, self.policy_second)
+            self.memory.append(pedazo)
+            if len(self.memory) == self.memory_length:  # and self.num_datos < MAX_GUARDAR:
+                if self.num_datos < MAX_GUARDAR and self.prueba :
+                    guardar = []
+                    for elem in self.memory:
+                        if len(guardar) == 0:
+                            guardar = elem
+                        else:
+                            guardar = np.append(guardar, elem)
+                    filename = f"datos/piezas_task_{self.task:d}"
+                    with open(filename, 'a+b') as fp:
+                        pickle.dump(guardar, fp)
+                    self.num_datos += 1
 
 
-            situacion = np.array(self.memory).reshape(1,4,27)
-            # situacion = situacion.reshape(1,-1)
-            if self.similarity_function is not None:
-                pred =  self.similarity_function.predict(situacion)
-                mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
-
-                if mse <= 0.02:
-                    Q_pasado = self.policy_first.model.predict(features.reshape(shape))
-                    Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
-                    accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
-                        range(len(self.actions)))
-            self.memory.pop(0)
-        else:
-                accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
+                if self.num_datos >= MAX_GUARDAR:
+                    self.BREAK = True
 
 
-        if accion is None:
-            accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
-                range(len(self.actions)))
+                situacion = np.array(self.memory).reshape(1,4,27)
+                # situacion = situacion.reshape(1,-1)
+                if self.similarity_function is not None:
+                    pred =  self.similarity_function.predict(situacion)
+                    mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
+
+                    if mse <= 0.02:
+                        Q_pasado = self.policy_first.model.predict_on_batch(features.reshape(shape))
+                        Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
+                        accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
+                            range(len(self.actions)))
+                self.memory.pop(0)
+            else:
+                    accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(range(len(self.actions)))
+
+
+            if accion is None:
+                accion = np.argmax(Q_actual) if np.random.rand() > self.epsilon else np.random.choice(
+                    range(len(self.actions)))
 
 
 
-        action = self.actions[accion]
+            action = self.actions[accion]
 
-        # util.raiseNotDefined()
+            # util.raiseNotDefined()
 
-        if not self.prueba:
-                # a =(EPS_END-EPS_START)/self.num_episodes
-                eps_threshold = EPS_START*(EPS_DECAY)**self.episodesSoFar
-                self.epsilon = eps_threshold
-                self.phi = self.phi*PHI_DECAY
-                self.n +=1
+            if not self.prueba:
+                    # a =(EPS_END-EPS_START)/self.num_episodes
+                    eps_threshold = EPS_START*(EPS_DECAY)**self.episodesSoFar
+                    self.epsilon = eps_threshold
+                    self.phi = self.phi*PHI_DECAY
+                    self.n +=1
 
 
 
