@@ -386,41 +386,41 @@ class Policy:
         if not self.priority:
             # print(gpus)
 
+            with tf.device("/physical_device:GPU:0"):
+
+                if len(self.memory) < BATCH_SIZE:
+                            return
+
+                transitions = self.memory.sample(BATCH_SIZE)
+                # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+                # detailed explanation). This converts batch-array of Transitions
+                # to Transition of batch-arrays.
+
+                shape = [-1]
+                shape.extend(self.state_space)
+                batch = Transition(*zip(*transitions))
+                state_batch = batch.state
+                state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
+                action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
+                reward_batch = np.array(batch.reward)
+                reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
 
 
-            if len(self.memory) < BATCH_SIZE:
-                        return
+                # Compute a mask of non-final states and concatenate the batch elements
+                # (a final state would've been the one after which simulation ended)
+                non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
+                                          dtype=np.int)
+                non_final_mask = np.nonzero(non_final_mask)[0]
+                non_final_next_states = [s for s in batch.next_state
+                                         if not s.data._lose and not s.data._win]
+                next_state_values = np.zeros([BATCH_SIZE],dtype =float)
+                non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
+                non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
+                next_state_values[non_final_mask] = np.max(np.array(self.model.predict_on_batch([non_final_next_states])),axis=1)
+                q_update = (reward_batch+ self.gamma * next_state_values)
+                q_values = np.array(self.model.predict_on_batch([state_batch]))
+                q_values[action_batch[:,0],action_batch[:,1]] = q_update
 
-            transitions = self.memory.sample(BATCH_SIZE)
-            # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
-            # detailed explanation). This converts batch-array of Transitions
-            # to Transition of batch-arrays.
-
-            shape = [-1]
-            shape.extend(self.state_space)
-            batch = Transition(*zip(*transitions))
-            state_batch = batch.state
-            state_batch = np.array(state_batch, dtype=np.float64).reshape(shape )
-            action_batch = np.array([list(range(len(batch.action))),list(batch.action)]).transpose()
-            reward_batch = np.array(batch.reward)
-            reward_batch = (reward_batch-np.mean(reward_batch))/(np.std(reward_batch)+0.001)
-
-
-            # Compute a mask of non-final states and concatenate the batch elements
-            # (a final state would've been the one after which simulation ended)
-            non_final_mask = np.array((tuple(map(lambda s: not s.data._lose and not s.data._win, batch.next_state))),
-                                      dtype=np.int)
-            non_final_mask = np.nonzero(non_final_mask)[0]
-            non_final_next_states = [s for s in batch.next_state
-                                     if not s.data._lose and not s.data._win]
-            next_state_values = np.zeros([BATCH_SIZE],dtype =float)
-            non_final_next_states = list(map(lambda s : dar_features(self,s), non_final_next_states))
-            non_final_next_states = np.array(non_final_next_states, dtype=np.float64).reshape(shape)
-            next_state_values[non_final_mask] = np.max(np.array(self.model.predict([non_final_next_states])),axis=1)
-            q_update = (reward_batch+ self.gamma * next_state_values)
-            q_values = np.array(self.model.predict([state_batch]))
-            q_values[action_batch[:,0],action_batch[:,1]] = q_update
-            with tf.device("GPU:0"):
                 for _ in range(20):
                     self.model.train_on_batch(state_batch, q_values)#,batch_size=len(state_batch),epochs=20,verbose=0)
         else:
