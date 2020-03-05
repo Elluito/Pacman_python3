@@ -40,7 +40,7 @@ HEIGTH = 19
 MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-BATCH_SIZE = 32
+BATCH_SIZE = 512
 
 def flatten(X):
     '''
