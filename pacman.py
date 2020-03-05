@@ -909,7 +909,7 @@ if __name__ == '__main__':
 
     # Get game components based on input
 
-
+    print("\n\n VOY A LEER LOS COMANDOS\n\n\n\n\n")
     args = readCommand(sys.argv[1:])
     crear_layout(args["difficulty"])
     t0 = time.time()
