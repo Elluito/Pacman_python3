@@ -751,7 +751,6 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         nombre_archivo_score = "datos/score_task_{}_attempt_{}.txt".format(pacman.task, attemp,pacman.n1)
     open(nombre_archivo, "w").close()
     open(nombre_archivo_score, "w").close()
-    open('models/' + NAME + '.h5').close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
         pacman.num_episodes = numGames
