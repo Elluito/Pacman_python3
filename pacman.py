@@ -808,7 +808,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         r, e = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)
-        print("Corr'i el juego {}".format(i))
+
         with open(nombre_archivo, "a") as f:
             f.write(str(int(game.state.isWin())) + "\n")
         with open(nombre_archivo_score,"a") as f:

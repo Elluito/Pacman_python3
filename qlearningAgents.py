@@ -370,7 +370,7 @@ class Policy:
 
 
     def saveModel(self, name):
-        open('models/' + name+ '.h5').close()
+
         self.model.save('models/' + name + '.h5')
 
     def mapeo_fn(self, state):
