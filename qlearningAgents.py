@@ -24,10 +24,16 @@ from game import *
 from learningAgents import ReinforcementAgent
 from pacman import GameState
 from segtree import SumSegmentTree, MinSegmentTree
-
+print(tf.__version__)
 # global gpus
 # gpus = tf.config.experimental.list_physical_devices('GPU')
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
 
+config = ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 2
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 NORTH = 'North'
 SOUTH = 'South'
 EAST = 'East'
