@@ -387,7 +387,7 @@ class Policy:
             # print(gpus)
 
 
-            with tf.device("GPU:1"):
+            with tf.device("GPU:0"):
                 if len(self.memory) < BATCH_SIZE:
                             return
 
