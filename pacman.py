@@ -49,10 +49,11 @@ from util import nearestPoint
 from util import manhattanDistance
 import layout as Mlayout
 import sys, time, random, os
-#
+
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 # global gpus
 gpus = tf.config.experimental.list_physical_devices('GPU')
-# print(gpus)
+print(gpus)
 if gpus:
     try:
         # Currently, memory growth needs to be the same across GPUs
@@ -729,7 +730,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # tf.reset_default_graph()
     # graph = tf.get_default_graph()
     # gpflow.reset_default_session(graph=graph)
-    open("log_salida_corrida_{}".format(attemp),"w").close()
+    # open("log_salida_corrida_{}".format(attemp),"w").close()
     __main__.__dict__['_display'] = display
 
     rules = ClassicGameRules(timeout)
@@ -804,7 +805,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         r, e = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)
-
+        print("Corr'i el juego {}".format(i))
         with open(nombre_archivo, "a") as f:
             f.write(str(int(game.state.isWin())) + "\n")
         with open(nombre_archivo_score,"a") as f:
@@ -915,6 +916,7 @@ if __name__ == '__main__':
     ini = args["inicio"]
     fin = args["final"] + 1
     args["attemp"]= ini
+    print("\nvoy a iniciar el juego\n")
     runGames(**args)
     tn = time.time()
     print("Tiempo total trasncurrido {} h".format((tn - t0) / (60 * 60)))
