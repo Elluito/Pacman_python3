@@ -40,7 +40,7 @@ HEIGTH = 19
 MAX_GUARDAR=500000
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-BATCH_SIZE = 512
+BATCH_SIZE = 32
 
 def flatten(X):
     '''
@@ -387,7 +387,7 @@ class Policy:
         if not self.priority:
             # print(gpus)
 
-            with tf.device("/GPU:0"):
+            with tf.device("GPU:0"):
 
                 if len(self.memory) < BATCH_SIZE:
                             return
