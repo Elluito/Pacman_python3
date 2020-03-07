@@ -54,19 +54,19 @@ import sys, time, random, os
 
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 # global gpus
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# print(gpus)
-# if gpus:
-#     try:
-#         # Currently, memory growth needs to be the same across GPUs
-#         for gpu in gpus:
-#             print("\n\nENTRE EN LAS GPUS IN PUSE SET MEMORY GROWTH TRUE")
-#             tf.config.experimental.set_memory_growth(gpu, True)
-#         logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-#         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-#     except RuntimeError as e:
-#         # Memory growth must be set before GPUs have been initialized
-#         print(e)
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print(gpus)
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            print("\n\nENTRE EN LAS GPUS IN PUSE SET MEMORY GROWTH TRUE")
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
 
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #

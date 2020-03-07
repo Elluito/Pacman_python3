@@ -599,7 +599,7 @@ class QLearningAgent(ReinforcementAgent):
         if self.policy_second.use_image:
             shape = [1]
             shape.extend(self.policy_second.state_space)
-            with tf.device("/GPU:0"):
+            with tf.device("GPU:0"):
                 Q_actual =self.policy_second.model.predict_on_batch(features.reshape(shape))
 
 
@@ -638,7 +638,7 @@ class QLearningAgent(ReinforcementAgent):
                 mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
 
                 if mse <= 0.02:
-                    with tf.device("/GPU:0"):
+                    with tf.device("GPU:0"):
                         Q_pasado = self.policy_first.model.predict_on_batch(features.reshape(shape))
                     Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
                     accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
