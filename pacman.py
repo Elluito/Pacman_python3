@@ -816,9 +816,9 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
             f.write(str(int(game.state.isWin())) + "\n")
         with open(nombre_archivo_score,"a") as f:
             f.write(str(game.state.getScore())+ "\n")
-        with open("datos/epislon_para_{}".format(NAME), "a") as f:
+        with open("datos/epislon_para_{}.txt".format(NAME), "a") as f:
                 f.write(str(e) + "\n")
-        with open("datos/phi_para_{}".format(NAME), "a") as f:
+        with open("datos/phi_para_{}.txt".format(NAME), "a") as f:
             f.write(str(phi) + "\n")
 
 
