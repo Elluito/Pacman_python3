@@ -741,14 +741,14 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # N2 es el numero de la tarea  actual sobre la cual hago la trasnferencia. Si es diferente de 0 significa que hicimos
     # trasnfer de lo contrario solo estamos corriendo un experimento sencillo
     if pacman.n2 != 0:
-        t = time.time()
+        t = int(time.time())
         nombre_archivo = "datos/prob_task_{}_attempt_{}_transfer_from_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
         nombre_archivo_score="datos/score_task_{}_attempt_{}_transfer_from_{}_iter_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
         NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,attemp,pacman.policy_second.gamma,pacman.n1)
 
     else:
-        t = time.time()
-        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(t),attemp,pacman.policy_second.gamma,pacman.n1)
+        t = int(time.time())
+        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(t),attemp,pacman.policy_second.gamma,pacman.n1)
         nombre_archivo = "datos/prob_task_{}_attempt_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,numTraining,t)
         nombre_archivo_score = "datos/score_task_{}_attempt_iter_{}_time_{}.txt".format(pacman.task, attemp,pacman.n1,numTraining,t)
     open(nombre_archivo, "w").close()
