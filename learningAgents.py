@@ -10,7 +10,7 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
+PHI_DECAY = 0.999970043
 
 from game import Directions, Agent, Actions
 
@@ -237,6 +237,17 @@ class ReinforcementAgent(ValueEstimationAgent):
         deltaReward = state.getScore() - self.lastState.getScore()
         self.observeTransition(self.lastState, self.lastAction, state, deltaReward)
         self.stopEpisode()
+
+        if not self.prueba:
+                # a =(EPS_END-EPS_START)/self.num_episodes
+                if self.epsilon > 0.01:
+                    self.epsilon =  self.epsilon * (self.eps_decay)
+
+                if self.phi > 0.01:
+                    self.phi = self.phi*PHI_DECAY
+                else:
+                    self.phi = self.phi
+
 
         # Make sure we have this var
         if not 'episodeStartTime' in self.__dict__:

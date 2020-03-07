@@ -772,4 +772,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return self.agents[0].lastReward,self.agents[0].epsilon
+        return self.agents[0].lastReward,self.agents[0].epsilon,self.agents[0].phi

@@ -24,6 +24,7 @@ from game import *
 from learningAgents import ReinforcementAgent
 from pacman import GameState
 from segtree import SumSegmentTree, MinSegmentTree
+from pacman import get_args
 print(tf.__version__)
 # global gpus
 # gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -514,12 +515,16 @@ class QLearningAgent(ReinforcementAgent):
         height = layout.height
         self.BREAK=False
         self.phi=0.8
+        self.phi_end=0.1
+        self.phi_decay=np.exp((np.log(0.8)-np.log(self.phi_end))/(int(self.numTraining/2)))
 
         self.num_trans = 0
         self.lastReward= 0
         self.n2 = 0
         self.n1 = 0
         self.eps_start = EPS_START
+        self.epsilon=EPS_START
+        self.eps_decay= np.exp((np.log(EPS_END)-np.log(EPS_START))/(int(self.numTraining/2)))
         self.eps_end = EPS_END
         self.similarity_function = None
         if "transfer" in args.keys():
@@ -558,6 +563,7 @@ class QLearningAgent(ReinforcementAgent):
         "*** YOUR CODE HERE ***"
 
         util.raiseNotDefined()
+
 
     def computeValueFromQValues(self, state):
         """
@@ -599,8 +605,8 @@ class QLearningAgent(ReinforcementAgent):
         if self.policy_second.use_image:
             shape = [1]
             shape.extend(self.policy_second.state_space)
-            with tf.device("GPU:0"):
-                Q_actual =self.policy_second.model.predict_on_batch(features.reshape(shape))
+
+            Q_actual =self.policy_second.model.predict_on_batch(features.reshape(shape))
 
 
         else:
@@ -638,8 +644,8 @@ class QLearningAgent(ReinforcementAgent):
                 mse = np.mean(np.power(flatten(situacion) - flatten(pred), 2))
 
                 if mse <= 0.02:
-                    with tf.device("GPU:0"):
-                        Q_pasado = self.policy_first.model.predict_on_batch(features.reshape(shape))
+
+                    Q_pasado = self.policy_first.model.predict_on_batch(features.reshape(shape))
                     Q_combinado = (self.phi*(Q_pasado-np.mean(Q_pasado))/np.std(Q_pasado)+(1-self.phi)*(Q_actual-np.mean(Q_actual))/np.std(Q_actual))
                     accion = np.argmax(Q_combinado) if np.random.rand() > self.epsilon else np.random.choice(
                         range(len(self.actions)))
@@ -658,20 +664,6 @@ class QLearningAgent(ReinforcementAgent):
 
         # util.raiseNotDefined()
 
-        if not self.prueba:
-                # a =(EPS_END-EPS_START)/self.num_episodes
-                eps_trashold = EPS_END
-                if self.episodesSoFar < 40000:
-                    eps_threshold = EPS_START * (EPS_DECAY) ** self.episodesSoFar
-
-
-
-                self.epsilon = eps_threshold
-                if self.episodesSoFar<40000:
-                    self.phi = self.phi*PHI_DECAY
-                else:
-                    self.phi = self.phi
-                self.n +=1
 
 
 

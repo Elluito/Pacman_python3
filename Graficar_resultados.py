@@ -63,7 +63,10 @@ def graficar_todos_juntos(max_number,window):
                 # rows,columns = tuple(datos.shape)
                 nuevo = np.loadtxt(str(directory) + "\\" + str(file))
                 datos = np.column_stack((datos, nuevo))
-        prom = np.mean(datos, axis=1)
+        if len(datos.shape)>=2:
+            prom = np.mean(datos, axis=1)
+        else:
+            prom=datos
         all_datos.append(prom)
     # print(all_datos)
     for i,prom in enumerate(all_datos):

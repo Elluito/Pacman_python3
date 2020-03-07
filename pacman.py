@@ -741,16 +741,20 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # N2 es el numero de la tarea  actual sobre la cual hago la trasnferencia. Si es diferente de 0 significa que hicimos
     # trasnfer de lo contrario solo estamos corriendo un experimento sencillo
     if pacman.n2 != 0:
-        nombre_archivo = "datos/prob_task_{}_attempt_{}_transfer_from_{}.txt".format(pacman.task,attemp,pacman.n1)
-        nombre_archivo_score="datos/score_task_{}_attempt_{}_transfer_from_{}.txt".format(pacman.task,attemp,pacman.n1)
+        t = time.time()
+        nombre_archivo = "datos/prob_task_{}_attempt_{}_transfer_from_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
+        nombre_archivo_score="datos/score_task_{}_attempt_{}_transfer_from_{}_iter_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
         NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,attemp,pacman.policy_second.gamma,pacman.n1)
 
     else:
-        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(time.time()),attemp,pacman.policy_second.gamma,pacman.n1)
-        nombre_archivo = "datos/prob_task_{}_attempt_{}.txt".format(pacman.task,attemp)
-        nombre_archivo_score = "datos/score_task_{}_attempt_{}.txt".format(pacman.task, attemp,pacman.n1)
+        t = time.time()
+        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(t),attemp,pacman.policy_second.gamma,pacman.n1)
+        nombre_archivo = "datos/prob_task_{}_attempt_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,numTraining,t)
+        nombre_archivo_score = "datos/score_task_{}_attempt_iter_{}_time_{}.txt".format(pacman.task, attemp,pacman.n1,numTraining,t)
     open(nombre_archivo, "w").close()
     open(nombre_archivo_score, "w").close()
+    open("datos/epislon_para_{}.txt".format(NAME), "w").close()
+    open("datos/phi_para_{}.txt".format(NAME), "w").close()
     from qlearningAgents import PacmanQAgent
     if isinstance(pacman, PacmanQAgent):
         pacman.num_episodes = numGames
@@ -806,12 +810,16 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
         layout = Mlayout.getLayout("campo_%i" % difficulty)
         game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
-        r, e = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)
+        r, e,phi = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)
 
         with open(nombre_archivo, "a") as f:
             f.write(str(int(game.state.isWin())) + "\n")
         with open(nombre_archivo_score,"a") as f:
             f.write(str(game.state.getScore())+ "\n")
+        with open("datos/epislon_para_{}".format(NAME), "a") as f:
+                f.write(str(e) + "\n")
+        with open("datos/phi_para_{}".format(NAME), "a") as f:
+            f.write(str(phi) + "\n")
 
 
         # if i % 10 == 0 and not pacman.prueb a:
@@ -895,7 +903,8 @@ def crear_layout(dificulty):
     f = open(direccion + "\campo_%i.lay" % dificulty, "w")
     f.write(s)
     f.close()
-
+def get_args():
+    return args
 
 if __name__ == '__main__':
 
@@ -913,6 +922,7 @@ if __name__ == '__main__':
     # Get game components based on input
 
     print("\n\n VOY A LEER LOS COMANDOS\n\n\n\n\n")
+    global args
     args = readCommand(sys.argv[1:])
     crear_layout(args["difficulty"])
     t0 = time.time()
