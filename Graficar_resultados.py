@@ -5,7 +5,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-
+from scipy import stats
 def smooth(scalars, weight):  # Weight between 0 and 1
     last = scalars[0]  # First value in the plot (first timestep)
     smoothed = list()
@@ -19,6 +19,15 @@ def smooth(scalars, weight):  # Weight between 0 and 1
 
 def default(str):
     return str + ' [Default: %default]'
+
+
+def plot_mean_and_CI(t,mean, lb, ub, color_mean=None, color_shading=None,label=""):
+    # plot the shaded range of the confidence intervals
+    plt.fill_between(t, ub, lb,
+                     color=color_shading, alpha=.5)
+    # plot the mean on top
+    plt.plot(t,mean, c=color_mean,label=label)
+
 
 def readCommand(argv):
     """
@@ -47,12 +56,31 @@ def readCommand(argv):
 
     return args
 
+def dar_up_lw_bound(y,window,variance=False):
+    i=0
+    up=[]
+    lw=[]
+    t = stats.t.ppf(1 - 0.025, window - 1)
+    while i+window<=len(y):
+        pedazo = y[i:i+window]
+        std=np.std(pedazo)
+        if not variance:
+            up.append(-(std/np.sqrt(window))*t)
+            lw.append(+(std/np.sqrt(window))*t)
+        else:
+            up.append(-(std) )
+            lw.append(std)
+
+        i+=1
+    return np.array(up),np.array(lw)
 
 def graficar_todos_juntos(max_number,window):
     names= ["T2-exponencial-prob","T1-T2-exponencial-prob"]
     # names=["T2-exponencial-score","T1-T2-exponencial-score"]
-    names=["Phi","Epsilon"]
+    # names=["Phi","Epsilon"]
     all_datos = []
+    all_std=[]
+
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
         os.chdir(directory)
@@ -65,16 +93,26 @@ def graficar_todos_juntos(max_number,window):
                 # rows,columns = tuple(datos.shape)
                 nuevo = np.loadtxt(str(directory) + "\\" + str(file))
                 datos = np.column_stack((datos, nuevo))
+
         if len(datos.shape)>=2:
             prom = np.mean(datos, axis=1)
+            std = np.std(datos,axis=1)
         else:
             prom=datos
+        t = stats.t.ppf(1 - 0.025,datos.shape[1]-1)
+        N=len( glob.glob("*.txt"))
         all_datos.append(prom)
+        # all_std.append((std/np.sqrt(N))*t)
+        all_std.append(std)
     # print(all_datos)
     for i,prom in enumerate(all_datos):
         y=running_mean(window,prom)
-        x = np.linspace(0, len(prom) , len(y))
-        plt.plot(x,y,label=names[i])
+        std_mean=running_mean(window,all_std[i])
+
+        up,lw=dar_up_lw_bound(prom,window,variance=True)
+        x = np.linspace(0, len(prom), len(up))
+        plot_mean_and_CI(x,y,y+lw,y+up,color_mean="C{}".format(i),color_shading="C{}".format(i),label=names[i])
+        # plt.plot(x,y,label=names[i])
 
     plt.xlabel("Episodes")
     s=""
@@ -146,4 +184,4 @@ def graficar_uno():
 
 if __name__ == '__main__':
 
-    graficar_todos_juntos(1,1)
+    graficar_todos_juntos(1,500)
