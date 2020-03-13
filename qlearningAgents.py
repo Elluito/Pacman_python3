@@ -516,7 +516,7 @@ class QLearningAgent(ReinforcementAgent):
         self.BREAK=False
         self.phi=0.8
         self.phi_end=0.1
-        self.phi_decay=np.exp((np.log(0.8)-np.log(self.phi_end))/(int(self.numTraining/2)))
+        self.phi_decay=np.exp((np.log(self.phi_end)-np.log(0.8))/(int(self.numTraining/2)))
 
         self.num_trans = 0
         self.lastReward= 0

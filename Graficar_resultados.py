@@ -51,12 +51,14 @@ def readCommand(argv):
 def graficar_todos_juntos(max_number,window):
     names= ["T2-exponencial-prob","T1-T2-exponencial-prob"]
     # names=["T2-exponencial-score","T1-T2-exponencial-score"]
+    names=["Phi","Epsilon"]
     all_datos = []
     for i in range(max_number+1):
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
         os.chdir(directory)
         datos=None
         for file in glob.glob("*.txt"):
+            print(file)
             if datos is None:
                 datos = np.loadtxt(str(directory) + "\\" + str(file))
             else:
@@ -71,7 +73,7 @@ def graficar_todos_juntos(max_number,window):
     # print(all_datos)
     for i,prom in enumerate(all_datos):
         y=running_mean(window,prom)
-        x = np.linspace(0, len(prom) * 10, len(y))
+        x = np.linspace(0, len(prom) , len(y))
         plt.plot(x,y,label=names[i])
 
     plt.xlabel("Episodes")
@@ -144,4 +146,4 @@ def graficar_uno():
 
 if __name__ == '__main__':
 
-    graficar_todos_juntos(1,500)
+    graficar_todos_juntos(1,1)

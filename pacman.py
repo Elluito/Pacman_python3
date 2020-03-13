@@ -52,7 +52,7 @@ import layout as Mlayout
 import sys, time, random, os
 
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+
 # global gpus
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print(gpus)
@@ -583,6 +583,7 @@ def readCommand(argv):
                       help=default('String con el par de tareas que se palnea trasnferir'),
                       default="")
 
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
         raise Exception('Command line input not understood: ' + str(otherjunk))
@@ -743,8 +744,8 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     if pacman.n2 != 0:
         t = int(time.time())
         nombre_archivo = "datos/prob_task_{}_attempt_{}_transfer_from_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
-        nombre_archivo_score="datos/score_task_{}_attempt_{}_transfer_from_{}_iter_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
-        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_attemp_{}_gamma{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,attemp,pacman.policy_second.gamma,pacman.n1)
+        nombre_archivo_score="datos/score_task_{}_attempt_{}_transfer_from_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,pacman.n1,numTraining,t)
+        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_attemp_{}_gamma{}_time_{}_transfer_from_{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,attemp,pacman.policy_second.gamma,t,pacman.n1)
 
     else:
         t = int(time.time())
