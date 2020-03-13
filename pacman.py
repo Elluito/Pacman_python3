@@ -51,7 +51,7 @@ from util import manhattanDistance
 import layout as Mlayout
 import sys, time, random, os
 
-
+os.environ["CUDA_VISIBLE_DEVIES"]="0"
 
 # global gpus
 gpus = tf.config.experimental.list_physical_devices('GPU')
