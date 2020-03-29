@@ -13,10 +13,10 @@
 PHI_DECAY = 0.999970043
 
 from game import Directions, Agent, Actions
-
+import pickle
 import random,util,time
 from mdp import *
-
+from copy import  deepcopy
 class ValueEstimationAgent(Agent):
     """
       Abstract agent which assigns values to (state,action)
@@ -92,7 +92,7 @@ class ValueEstimationAgent(Agent):
         util.raiseNotDefined()
 
 class ReinforcementAgent(ValueEstimationAgent):
-    __slots__ = ('actionFn', 'numTraining', 'epsilon', 'alpha', 'gamma', 'task')
+    __slots__ = ('actionFn', 'numTraining', 'epsilon', 'alpha', 'gamma', 'task','history')
     """
       Abstract Reinforcemnt Agent: A ValueEstimationAgent
             which estimates Q-Values (as well as policies) from experience
@@ -127,6 +127,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.alpha = float(alpha)
         self.discount = float(gamma)
         self.task=int(task)
+        self.histroy=[]
 
     ####################################
     #    Override These Functions      #
@@ -237,6 +238,12 @@ class ReinforcementAgent(ValueEstimationAgent):
         deltaReward = state.getScore() - self.lastState.getScore()
         self.observeTransition(self.lastState, self.lastAction, state, deltaReward)
         self.stopEpisode()
+
+        # f="datos/history"
+        #
+        # with open(f,"a+b")as co:
+        #     pickle.dump(deepcopy(self.history),co)
+        # self.history=[]
 
         if not self.prueba:
                 # a =(EPS_END-EPS_START)/self.num_episodes

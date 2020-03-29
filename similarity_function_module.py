@@ -125,73 +125,110 @@ def create_LTSautoencoder(task):
     X_0 = shuffle(X_0)
     X_0_train,X_test = train_test_split(X_0,test_size=0.1)
     X_0_train, X_0_val = train_test_split(X_0_train,test_size=0.2)
+    #
+    # layers = [  LSTM(64,activation="relu",input_shape=(time_step,27),return_sequences=True),
+    #             keras.layers.LSTM(32,activation="relu",return_sequences=True),
+    #             keras.layers.LSTM(16,activation="relu",return_sequences=False),
+    #             RepeatVector(time_step),
+    #             keras.layers.LSTM(16, activation="relu", return_sequences=True),
+    #             keras.layers.BatchNormalization(),
+    #             keras.layers.LSTM(32, activation="relu", return_sequences=True),
+    #             LSTM(64, activation="relu", return_sequences=True),
+    #             TimeDistributed(Dense(27))]
+    # model= keras.Sequential(layers)
+    # model.compile(loss = "mse",optimizer=optimizers.Adam(0.0001))
+    # with tf.device("GPU:0"):
+    #     history = model.fit(X_0_train,X_0_train,batch_size=128,epochs=200,verbose=2,validation_data=(X_0_val,X_0_val))
+    #
+    # plt.plot(history.history['loss'], linewidth=2, label='Train')
+    # plt.plot(history.history['val_loss'], linewidth=2, label='Valid')
+    # plt.legend(loc='upper right')
+    # plt.title('Model loss')
+    # plt.ylabel('Loss')
+    # plt.xlabel('Epoch')
+    # plt.savefig("datos/error.png")
+    # plt.figure(figsize=(10,10))
+    co = f"datos/LTSM_AUTOENCODER_20000_task_{task:d}.h5"
+    model = keras.models.load_model(co)
 
-    layers = [  LSTM(64,activation="relu",input_shape=(time_step,27),return_sequences=True),
-                keras.layers.LSTM(32,activation="relu",return_sequences=True),
-                keras.layers.LSTM(16,activation="relu",return_sequences=False),
-                RepeatVector(time_step),
-                keras.layers.LSTM(16, activation="relu", return_sequences=True),
-                keras.layers.BatchNormalization(),
-                keras.layers.LSTM(32, activation="relu", return_sequences=True),
-                LSTM(64, activation="relu", return_sequences=True),
-                TimeDistributed(Dense(27))]
-    model= keras.Sequential(layers)
-    model.compile(loss = "mse",optimizer=optimizers.Adam(0.0001))
-    with tf.device("XLA_GPU:0"):
-        history = model.fit(X_0_train,X_0_train,batch_size=128,epochs=200,verbose=2,validation_data=(X_0_val,X_0_val))
-
-    plt.plot(history.history['loss'], linewidth=2, label='Train')
-    plt.plot(history.history['val_loss'], linewidth=2, label='Valid')
-    plt.legend(loc='upper right')
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.savefig("datos/error.png")
-    plt.figure(figsize=(10,10))
-
-
-
-    X_1 = data[task+1][:100]
+    X_1 = data[task+2][:1000]
+    print("numero de datos con label 0: {}".format(X_0_train.shape[0]))
     for i,x in enumerate(X_1):
         X_1[i] = preprocessing.scale(x.reshape(time_step,27))
     X_1 = np.array(X_1)
     X_1 =shuffle(X_1)
 
     prueba_1 = model.predict(X_1)
-    prueba_0 =model.predict(X_test[:100])
+    prueba_0 =model.predict(X_test[:1000])
     mse_1 = np.mean(np.power(flatten(X_1) - flatten(prueba_1), 2), axis=1)
-    mse_0 = np.mean(np.power(flatten(X_test[:100]) - flatten(prueba_0), 2), axis=1)
+    mse_0 = np.mean(np.power(flatten(X_test[:1000]) - flatten(prueba_0), 2), axis=1)
 
     X = np.vstack((X_0_train,X_1))
-    lo =[0]*18000
+    lo =[0]*X_0_train.shape[0]
     lo.extend([1]*X_1.shape[0])
     y = np.array(lo)
 
 
 
     # ax.hlines(0.1, ax.get_xlim()[0], ax.get_xlim()[1], colors="r", zorder=100, label='Threshold')
-    plt.scatter(range(100),mse_1)
-    plt.scatter(range(100),mse_0,)
+    plt.scatter(range(1000),mse_1)
+    plt.scatter(range(1000),mse_0,)
     plt.title("Reconstruction error for different classes")
-    plt.legend([f"Anomalias (Tarea {task+1:d})",f"No anomalias (Tarea {task:d})"])
+    plt.legend([f"Anomalies (Task {task+2:d})",f"No anomalies (Task {task:d})"])
     plt.ylabel("Reconstruction error")
     plt.xlabel("Data point index")
-    plt.savefig("datos/clasificacion.png")
+    plt.savefig("datos/MSE_error_task_{}.png".format(task))
 
     co = f"datos/LTSM_AUTOENCODER_20000_task_{task:d}.h5"
-    model.save(co)
+    # model.save(co)
 
     prueba_1 = model.predict(X)
     mse_1 = np.mean(np.power(flatten(X) - flatten(prueba_1), 2), axis=1)
+
     plt.figure(  figsize=(10,10))
     precision_rt, recall_rt, threshold_rt = precision_recall_curve(y, mse_1)
-    plt.plot(threshold_rt, precision_rt[1:], label="Precision", linewidth=5)
-    plt.plot(threshold_rt, recall_rt[1:], label="Recall", linewidth=5)
-    plt.title('Precision and recall for different threshold values')
-    plt.xlabel('Threshold')
-    plt.ylabel('Precision/Recall')
-    plt.legend()
-    plt.show()
+    plt.plot(threshold_rt, precision_rt[1:], label="Precision", linewidth=2)
+    plt.plot(threshold_rt, recall_rt[1:], label="Recall", linewidth=2)
+    plt.title('Precision and recall for different threshold values', fontsize=15)
+    plt.xlabel('Threshold', fontsize=15)
+    plt.ylabel('Precision/Recall', fontsize=15)
+    plt.legend(prop={"size": 15})
+    plt.savefig("datos/Precision_Recall_task_{}.png".format(task))
+
+
+
+    y_predict = mse_1 > 0.02
+    # fig, ax = plt.subplots()
+    ma = confusion_matrix(y,y_predict,normalize="true")
+    plt.matshow(ma,cmap="autumn")
+
+    plt.xticks([1,0],[f"Anomalies (Task {task+2:d})",f"No anomalies (Task {task:d})"])
+    plt.yticks([0.6,-0.4],[f"Anomalies (Task {task+2:d})",f"No anomalies (Task {task:d})"],rotation=90)
+
+    plt.xlabel("Predicted class",fontsize=20)
+    plt.ylabel("True Class",fontsize=20)
+    # plt.title("Task {}".format(task))
+    #
+    # ax.text(0,0,ma[0,0])
+    # ax.text(0,1,ma[0,1])
+    # ax.text(1,0,ma[1,0])
+    # ax.text(1,1,ma[1,1])
+
+    fig = plt.gcf()
+    ax=fig.axes[0]
+    ax.text(0,0,"{0:.2f}".format(ma[0,0]),ha="center", va="center", color="k",fontsize=20)
+    ax.text(0,1,"{0:.2f}".format(ma[0,1]),ha="center", va="center", color="k",fontsize=20)
+    ax.text(1,0,"{0:.2f}".format(ma[1,0]),ha="center", va="center", color="k",fontsize=20)
+    ax.text(1,1,"{0:.2f}".format(ma[1,1]),ha="center", va="center", color="k",fontsize=20)
+    ax.tick_params(labelsize=20)
+    fig.set_size_inches(10, 10)
+
+
+
+    plt.savefig("datos/confusion_matrix_task_{}.png".format("0-2"))
+
+
+
 
     return model
 
@@ -226,12 +263,12 @@ def test_autoencoder(task):
     prueba_1 = model.predict(X_1)
     mse_1 = np.mean(np.power(flatten(X_1) - flatten(prueba_1), 2), axis=1)
     precision_rt, recall_rt, threshold_rt = precision_recall_curve(y1,mse_1)
-    plt.plot(threshold_rt, precision_rt[1:], label="Precision", linewidth=5)
-    plt.plot(threshold_rt, recall_rt[1:], label="Recall", linewidth=5)
-    plt.title('Precision and recall for different threshold values')
-    plt.xlabel('Threshold')
-    plt.ylabel('Precision/Recall')
-    plt.legend()
+    plt.plot(threshold_rt, precision_rt[1:], label="Precision", linewidth=2)
+    plt.plot(threshold_rt, recall_rt[1:], label="Recall", linewidth=2)
+    plt.title('Precision and recall for different threshold values',fotnsize=15)
+    plt.xlabel('Threshold',fontsize=15)
+    plt.ylabel('Precision/Recall',fontsize=15)
+    plt.legend(prop={"size":15})
     plt.show()
     TRESHOLD=0.02
 
@@ -244,7 +281,7 @@ def test_autoencoder(task):
 
 
 if __name__ == '__main__':
-    model=lstm_autoencoder = create_LTSautoencoder(0)
+    model= create_LTSautoencoder(0)
 
     # test_autoencoder(1)
 

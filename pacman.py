@@ -735,7 +735,7 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
     # gpflow.reset_default_session(graph=graph)
     # open("log_salida_corrida_{}".format(attemp),"w").close()
     __main__.__dict__['_display'] = display
-
+    open("datos/history","w+b").close()
     rules = ClassicGameRules(timeout)
     games = []
 
@@ -749,7 +749,8 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
 
     else:
         t = int(time.time())
-        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(t),attemp,pacman.policy_second.gamma,pacman.n1)
+        print("ESTOY EN LA  TAREA {}".format(pacman.task))
+        NAME = "modelo_imagen_%i" % numGames + "_0{}_0{}_dif_{}_{}_attemp_{}_gamma{}".format(int(pacman.eps_start * 10),int(pacman.eps_end * 10),difficulty,int(t),attemp,pacman.policy_second.gamma)
         nombre_archivo = "datos/prob_task_{}_attempt_{}_iter_{}_time_{}.txt".format(pacman.task,attemp,numTraining,t)
         nombre_archivo_score = "datos/score_task_{}_attempt_iter_{}_time_{}.txt".format(pacman.task, attemp,pacman.n1,numTraining,t)
     open(nombre_archivo, "w").close()
@@ -779,8 +780,9 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
             name = "modelo_imagen_20000_04_01_dif0_1575607728_gamma_0.9_attemp_8"
         if difficulty == 1:
             name = "modelo_imagen_25000_04_01_dif1_1576737275_attemp_3_gamma0.9"
+            # name = "modelo_imagen_20000_04_01_dif0_1575607728_gamma_0.9_attemp_8"
         if difficulty == 2:
-            name = "modelo_imagen_25000_04_01_dif2_1577007228_attemp_2_gamma0.9"
+            name = "modelo_imagen_40000_09_01_dif_2_attemp_4_gamma0.9_transfer_from_1"
         pacman.policy_second.load_Model("models/" + name + ".h5")
         pacman.epsilon = 0
     n = 0
@@ -866,7 +868,7 @@ def crear_layout(dificulty):
     pos_comida = (10, 10)
     # Posición del pacman
     x = int(np.random.randint(12, 15))
-    y = int(np.random.randint(12, 15))
+    y = int(np.random.randint(2, 6))
     pos_pacman = (y, x)
     # Posición del fantasma
     xf = int(np.random.randint(1, 3))
@@ -900,8 +902,8 @@ def crear_layout(dificulty):
     s = s.replace(" ", "")
     s = s.replace("]", "")
     s = s.replace("0", " ")
-    open(direccion + "\campo_%i.lay" % dificulty, "w").close()
-    f = open(direccion + "\campo_%i.lay" % dificulty, "w")
+    open(direccion + "/campo_%i.lay" % dificulty, "w").close()
+    f = open(direccion + "/campo_%i.lay" % dificulty, "w")
     f.write(s)
     f.close()
 def get_args():

@@ -508,6 +508,7 @@ class QLearningAgent(ReinforcementAgent):
         self.memory = []
         self.memory_length = 4
         self.prueba =False
+        self.history=[]
 
 
         layout = args["layout"]
@@ -600,6 +601,7 @@ class QLearningAgent(ReinforcementAgent):
         """
 
         # Pick Action
+        self.history.append(np.array(state.getPacmanPosition()))
         features = dar_features(self.policy_second,state)
         shape = [1,-1]
         if self.policy_second.use_image:
@@ -628,8 +630,8 @@ class QLearningAgent(ReinforcementAgent):
                     else:
                         guardar = np.append(guardar, elem)
                 filename = f"datos/piezas_task_{self.task:d}"
-                with open(filename, 'a+b') as fp:
-                    pickle.dump(guardar, fp)
+                # with open(filename, 'a+b') as fp:
+                #     pickle.dump(guardar, fp)
                 self.num_datos += 1
 
 
@@ -771,6 +773,7 @@ class ApproximateQAgent(PacmanQAgent):
         "Called at the end of each game."
         # call the super-class final method
         PacmanQAgent.final(self, state)
+
 
         # did we finish training?
 
