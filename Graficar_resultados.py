@@ -75,7 +75,7 @@ def dar_up_lw_bound(y,window,variance=False):
     return np.array(up),np.array(lw)
 
 def graficar_todos_juntos(max_number,window):
-    names= ["T2-exponencial-prob","T0-T2-prob"]
+    names= ["T2-exponencial-prob","T0-T2-esquina_sup_der-prob"]
     # names=["T1-exponencial-score","T0-T1-exponencial-score"]
     # names=["Phi","Epsilon"]
     all_datos = []
@@ -100,8 +100,9 @@ def graficar_todos_juntos(max_number,window):
             std = np.std(datos,axis=1)
         else:
             prom=datos
-        t = stats.t.ppf(1 - 0.025,datos.shape[1]-1)
-        N=len( glob.glob("*.txt"))
+            std=0
+        # t = stats.t.ppf(1 - 0.025,datos.shape[1]-1)
+        # N=len( glob.glob("*.txt"))
         all_datos.append(prom)
         # all_std.append((std/np.sqrt(N))*t)
         all_std.append(std)
