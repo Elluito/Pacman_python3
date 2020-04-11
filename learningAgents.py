@@ -251,7 +251,7 @@ class ReinforcementAgent(ValueEstimationAgent):
                     self.epsilon =  self.epsilon * (self.eps_decay)
 
                 if self.phi > 0.01:
-                    self.phi = self.phi*PHI_DECAY
+                    self.phi = self.phi*self.phi_decay
                 else:
                     self.phi = self.phi
 

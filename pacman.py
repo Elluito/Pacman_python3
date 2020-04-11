@@ -868,10 +868,10 @@ def crear_layout(dificulty):
     pos_comida = (10, 10)
     # Posición del pacman
     x1 = int(np.random.randint(12, 16))
-    y1 = int(np.random.randint(2, 16))
-    x2 = int(np.random.randint(2, 16))
-    y2 = int(np.random.randint(12, 16))
-    x,y = (x1,y1) if np.random.rand()>0.5 else (x2,y2)
+    y1 = int(np.random.randint(12, 16))
+    # x2 = int(np.random.randint(2, 16))
+    # y2 = int(np.random.randint(12, 16))
+    x,y = (x1,y1) #if np.random.rand()>0.5 else (x2,y2)
 
     pos_pacman = (y, x)
     # Posición del fantasma

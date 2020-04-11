@@ -75,29 +75,32 @@ def dar_up_lw_bound(y,window,variance=False):
     return np.array(up),np.array(lw)
 
 def graficar_todos_juntos(max_number,window):
-    names= ["T2-exponencial-prob","T0-T2-esquina_sup_der-prob"]
+    names= ["T2-exponencial-prob","T1-T2-exponencial-prob"]
     # names=["T1-exponencial-score","T0-T1-exponencial-score"]
     # names=["Phi","Epsilon"]
     all_datos = []
     all_std=[]
+    N = 0
 
     for i in range(max_number+1):
         # directory=os.chdir(os.path.abspath(__file__))
         directory=(os.path.dirname(os.path.abspath(__file__)))+"\\"+names[i]
+
         os.chdir(directory)
         datos=None
         for file in glob.glob("*.txt"):
             print(file)
             if datos is None:
-                datos = np.loadtxt(str(directory) + "\\" + str(file))
+                N=np.loadtxt(str(directory) + "\\" + str(file)).shape[0]
+                datos = running_mean(window,np.loadtxt(str(directory) + "\\" + str(file)))
             else:
                 # rows,columns = tuple(datos.shape)
-                nuevo = np.loadtxt(str(directory) + "\\" + str(file))
+                nuevo = running_mean(window,np.loadtxt(str(directory) + "\\" + str(file)))
                 datos = np.column_stack((datos, nuevo))
         os.chdir("..")
         if len(datos.shape)>=2:
             prom = np.mean(datos, axis=1)
-            std = np.std(datos,axis=1)
+            std = np.std(datos,axis=1)**2
         else:
             prom=datos
             std=0
@@ -108,12 +111,13 @@ def graficar_todos_juntos(max_number,window):
         all_std.append(std)
     # print(all_datos)
     for i,prom in enumerate(all_datos):
-        y=running_mean(window,prom)
+        # y=running_mean(window,prom)
         # std_mean=running_mean(window,all_std[i])
 
-        up,lw=dar_up_lw_bound(prom,window,variance=True)
-        x = np.linspace(0, len(prom), len(up))
-        plot_mean_and_CI(x,y,y+lw,y+up,color_mean="C{}".format(i),color_shading="C{}".format(i),label=names[i].replace("-exponencial-prob","").replace("-prob","").replace("-exponencial-score","").replace("-","->"))
+        # up,lw=dar_up_lw_bound(prom,window,variance=True)
+
+        x = np.linspace(0,N,len(prom))
+        plot_mean_and_CI(x,prom,prom-all_std[i],prom+all_std[i],color_mean="C{}".format(i),color_shading="C{}".format(i),label=names[i].replace("-exponencial-prob","").replace("-prob","").replace("-exponencial-score","").replace("-","->"))
         # plt.plot(x,y,label=names[i])
 
     plt.xlabel("Episodes",fontsize=20)
@@ -128,7 +132,7 @@ def graficar_todos_juntos(max_number,window):
     fig = plt.gcf()
     ax=fig.axes[0]
     ax.tick_params(labelsize=15)
-
+    plt.savefig(names[0]+"_"+names[1]+".pdf")
     plt.show()
 
 def running_mean(N,x):
