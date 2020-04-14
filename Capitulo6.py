@@ -290,7 +290,7 @@ def Estimar_V(Q,s_begin,s_finish,wind_colums,max_a_ii,max_a_jj,max_ii,max_jj,EPI
 
             assert np.all(np.array(next_s) >= 0), "El proximo estado tiene componente negativo negativo: " + str(next_s) + \
                                                   f" mientras que debería estar entre las dimensiones [{max_ii:d},{max_jj:d}]" + "estado anterior: " + str(
-                s) + f" acción tomada  [{aii:d},{ajj:d}]_"
+                s) + f" accion tomada  [{aii:d},{ajj:d}]_"
             reward = 0 if next_s == s_finish else -1
 
 
