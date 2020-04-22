@@ -594,7 +594,13 @@ def readCommand(argv):
 
     # Choose a layout
     crear_layout(options.difficulty)
-    args['layout'] = Mlayout.getLayout(options.layout)
+    while True:
+        try:
+            args['layout'] = Mlayout.getLayout("campo_%i" % options.difficulty)
+            break
+        except:
+            crear_layout(options.difficulty)
+
 
     if args['layout'] == None: raise Exception("The layout " + options.layout + " cannot be found")
 
