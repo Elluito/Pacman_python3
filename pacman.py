@@ -810,7 +810,13 @@ def runGames(layout, pacman, ghosts, display, numGames, record, attemp, inicio, 
             pass
 
         crear_layout(difficulty)
-        layout = Mlayout.getLayout("campo_%i" % difficulty)
+        while True:
+            try:
+                layout = Mlayout.getLayout("campo_%i" % difficulty)
+                break
+            except:
+                crear_layout(difficulty)
+
         game = rules.newGame(layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
 
         r, e,phi = game.run(EPISODES, callbacks=[tensorboard], log_dir="logs\\" + NAME)

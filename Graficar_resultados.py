@@ -75,8 +75,10 @@ def dar_up_lw_bound(y,window,variance=False):
     return np.array(up),np.array(lw)
 
 def graficar_todos_juntos(max_number,window):
-    names= ["T2-exponencial-prob","T1-T2-exponencial-prob"]
-    # names=["T1-exponencial-score","T0-T1-exponencial-score"]
+    # names = ["T2-exponencial-prob","T1-T2-exponencial-prob"]
+    names = ["T2-exponencial-prob","T0-T2-low-phi"]
+    # names=["T2-exponencial-prob","T0-T2-prob"]
+    # names = ["T1-exponencial-prob", "T0-T1-exponencial-prob"]
     # names=["Phi","Epsilon"]
     all_datos = []
     all_std=[]
@@ -127,13 +129,14 @@ def graficar_todos_juntos(max_number,window):
     else :
         s="Winning probability "
     plt.ylabel(s,fontsize=20)
-    plt.title("Estimate with running mean of size {}".format(window),fontsize=20)
-    plt.legend(prop={"size":15})
+    plt.title("Estimate with running mean of size {}".format(window),fontsize=25)
+    plt.legend(prop={"size":20})
     fig = plt.gcf()
     ax=fig.axes[0]
-    ax.tick_params(labelsize=15)
-    plt.savefig(names[0]+"_"+names[1]+".pdf")
-    plt.show()
+    ax.tick_params(labelsize=20)
+    fig.set_size_inches(15, 10)
+    plt.savefig("datos/"+names[0]+"_"+names[1]+".pdf")
+    # plt.show()
 
 def running_mean(N,x):
 

@@ -23,8 +23,8 @@ from sklearn.metrics import precision_recall_fscore_support, f1_score
 import matplotlib.pyplot as plt
 from numpy.random import seed
 seed(7)
-from tensorflow import set_random_seed
-set_random_seed(11)
+# from tensorflow import set_random_seed
+# set_random_seed(11)
 
 def load_datasets():
     dataset={}
@@ -125,7 +125,7 @@ def create_LTSautoencoder(task):
     X_0 = shuffle(X_0)
     X_0_train,X_test = train_test_split(X_0,test_size=0.1)
     X_0_train, X_0_val = train_test_split(X_0_train,test_size=0.2)
-    #
+
     # layers = [  LSTM(64,activation="relu",input_shape=(time_step,27),return_sequences=True),
     #             keras.layers.LSTM(32,activation="relu",return_sequences=True),
     #             keras.layers.LSTM(16,activation="relu",return_sequences=False),
@@ -139,7 +139,7 @@ def create_LTSautoencoder(task):
     # model.compile(loss = "mse",optimizer=optimizers.Adam(0.0001))
     # with tf.device("GPU:0"):
     #     history = model.fit(X_0_train,X_0_train,batch_size=128,epochs=200,verbose=2,validation_data=(X_0_val,X_0_val))
-    #
+
     # plt.plot(history.history['loss'], linewidth=2, label='Train')
     # plt.plot(history.history['val_loss'], linewidth=2, label='Valid')
     # plt.legend(loc='upper right')
@@ -151,7 +151,7 @@ def create_LTSautoencoder(task):
     co = f"datos/LTSM_AUTOENCODER_20000_task_{task:d}.h5"
     model = keras.models.load_model(co)
 
-    X_1 = data[task+2][:1000]
+    X_1 = data[task+1][:1000]
     print("numero de datos con label 0: {}".format(X_0_train.shape[0]))
     for i,x in enumerate(X_1):
         X_1[i] = preprocessing.scale(x.reshape(time_step,27))
@@ -174,10 +174,10 @@ def create_LTSautoencoder(task):
     plt.scatter(range(1000),mse_1)
     plt.scatter(range(1000),mse_0,)
     plt.title("Reconstruction error for different classes")
-    plt.legend([f"Anomalies (Task {task+2:d})",f"No anomalies (Task {task:d})"])
+    plt.legend([f"Anomalies (Task {task+1:d})",f"No anomalies (Task {task:d})"])
     plt.ylabel("Reconstruction error")
     plt.xlabel("Data point index")
-    plt.savefig("datos/MSE_error_task_{}.png".format(task))
+    plt.savefig("datos/MSE_error_task_{}.pdf".format(task))
 
     co = f"datos/LTSM_AUTOENCODER_20000_task_{task:d}.h5"
     # model.save(co)
@@ -190,10 +190,10 @@ def create_LTSautoencoder(task):
     plt.plot(threshold_rt, precision_rt[1:], label="Precision", linewidth=2)
     plt.plot(threshold_rt, recall_rt[1:], label="Recall", linewidth=2)
     plt.title('Precision and recall for different threshold values', fontsize=15)
-    plt.xlabel('Threshold', fontsize=15)
-    plt.ylabel('Precision/Recall', fontsize=15)
-    plt.legend(prop={"size": 15})
-    plt.savefig("datos/Precision_Recall_task_{}.png".format(task))
+    plt.xlabel('Threshold', fontsize=25)
+    plt.ylabel('Precision/Recall', fontsize=25)
+    plt.legend(prop={"size": 25})
+    plt.savefig("datos/Precision_Recall_task_{}.pdf".format(task))
 
 
 
@@ -202,11 +202,11 @@ def create_LTSautoencoder(task):
     ma = confusion_matrix(y,y_predict,normalize="true")
     plt.matshow(ma,cmap="autumn")
 
-    plt.xticks([1,0],[f"Anomalies (Task {task+2:d})",f"No anomalies (Task {task:d})"])
-    plt.yticks([0.6,-0.4],[f"Anomalies (Task {task+2:d})",f"No anomalies (Task {task:d})"],rotation=90)
+    plt.xticks([1,0],[f"Task {task+1:d}",f"Task {task:d}"])
+    plt.yticks([0.6,-0.4],[f"Task {task+1:d}",f"Task {task:d}"],rotation=90)
 
-    plt.xlabel("Predicted class",fontsize=20)
-    plt.ylabel("True Class",fontsize=20)
+    plt.xlabel("Predicted class",fontsize=25)
+    plt.ylabel("True Class",fontsize=25)
     # plt.title("Task {}".format(task))
     #
     # ax.text(0,0,ma[0,0])
@@ -216,16 +216,16 @@ def create_LTSautoencoder(task):
 
     fig = plt.gcf()
     ax=fig.axes[0]
-    ax.text(0,0,"{0:.2f}".format(ma[0,0]),ha="center", va="center", color="k",fontsize=20)
-    ax.text(0,1,"{0:.2f}".format(ma[0,1]),ha="center", va="center", color="k",fontsize=20)
+    ax.text(0,0,"{0:.2f}".format(ma[0,0]),ha="center", va="center", color="k",fontsize=25)
+    ax.text(0,1,"{0:.2f}".format(ma[0,1]),ha="center", va="center", color="k",fontsize=25)
     ax.text(1,0,"{0:.2f}".format(ma[1,0]),ha="center", va="center", color="k",fontsize=20)
     ax.text(1,1,"{0:.2f}".format(ma[1,1]),ha="center", va="center", color="k",fontsize=20)
-    ax.tick_params(labelsize=20)
+    ax.tick_params(labelsize=25)
     fig.set_size_inches(10, 10)
 
 
 
-    plt.savefig("datos/confusion_matrix_task_{}.png".format("0-2"))
+    plt.savefig("datos/confusion_matrix_task_{}.pdf".format("1-2"))
 
 
 
@@ -266,9 +266,9 @@ def test_autoencoder(task):
     plt.plot(threshold_rt, precision_rt[1:], label="Precision", linewidth=2)
     plt.plot(threshold_rt, recall_rt[1:], label="Recall", linewidth=2)
     plt.title('Precision and recall for different threshold values',fotnsize=15)
-    plt.xlabel('Threshold',fontsize=15)
-    plt.ylabel('Precision/Recall',fontsize=15)
-    plt.legend(prop={"size":15})
+    plt.xlabel('Threshold',fontsize=25)
+    plt.ylabel('Precision/Recall',fontsize=25)
+    plt.legend(prop={"size":20})
     plt.show()
     TRESHOLD=0.02
 
