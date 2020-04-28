@@ -76,7 +76,9 @@ def dar_up_lw_bound(y,window,variance=False):
 
 def graficar_todos_juntos(max_number,window):
     # names = ["T2-exponencial-prob","T1-T2-exponencial-prob"]
-    names = ["T2-exponencial-prob","T0-T2-low-phi"]
+    # names = ["T2-exponencial-prob","T0-T2-low-phi"]
+    # names = ["T2-exponencial-prob", "T1-T2-low-phi"]
+    names = ["T1-exponencial-prob", "T0-T1-low-phi"]
     # names=["T2-exponencial-prob","T0-T2-prob"]
     # names = ["T1-exponencial-prob", "T0-T1-exponencial-prob"]
     # names=["Phi","Epsilon"]
@@ -119,7 +121,7 @@ def graficar_todos_juntos(max_number,window):
         # up,lw=dar_up_lw_bound(prom,window,variance=True)
 
         x = np.linspace(0,N,len(prom))
-        plot_mean_and_CI(x,prom,prom-all_std[i],prom+all_std[i],color_mean="C{}".format(i),color_shading="C{}".format(i),label=names[i].replace("-exponencial-prob","").replace("-prob","").replace("-exponencial-score","").replace("-","->"))
+        plot_mean_and_CI(x,prom,prom-all_std[i],prom+all_std[i],color_mean="C{}".format(i),color_shading="C{}".format(i),label=names[i].replace("-exponencial-prob","").replace("-prob","").replace("-exponencial-score","").replace("-low-phi","").replace("-","->"))
         # plt.plot(x,y,label=names[i])
 
     plt.xlabel("Episodes",fontsize=20)

@@ -281,7 +281,7 @@ def test_autoencoder(task):
 
 
 if __name__ == '__main__':
-    model= create_LTSautoencoder(0)
+    model= create_LTSautoencoder(1)
 
     # test_autoencoder(1)
 
